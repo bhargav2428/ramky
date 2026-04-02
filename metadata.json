@@ -1,0 +1,7 @@
+{
+  "name": "Ramky's Brindavanam | Luxury Real Estate",
+  "description": "Ultra-premium luxury real estate development by Ramky Infra & Developers Pvt Ltd at Mucherla, Future City.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

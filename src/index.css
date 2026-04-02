@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+
+  --color-luxury-black: #0B0B0B;
+  --color-luxury-gold: #C9A24A;
+  --color-luxury-gold-light: #D4B46B;
+  --color-luxury-offwhite: #F8F6F2;
+  --color-luxury-gray: #2A2A2A;
+}
+
+@layer base {
+  body {
+    @apply bg-luxury-black text-luxury-offwhite font-sans antialiased selection:bg-luxury-gold selection:text-luxury-black;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+.glass-card {
+  @apply bg-white/5 backdrop-blur-md border border-white/10;
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #C9A24A 0%, #E5C786 50%, #C9A24A 100%);
+}
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, #C9A24A 0%, #E5C786 50%, #C9A24A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-luxury-black;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-luxury-gold/30 hover:bg-luxury-gold/50 transition-colors;
+}
