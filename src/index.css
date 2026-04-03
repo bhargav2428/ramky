@@ -13,17 +13,53 @@
 }
 
 @layer base {
+  :root {
+    --bg-primary: #F8F6F2;
+    --bg-secondary: #FFFFFF;
+    --text-primary: #0B0B0B;
+    --text-secondary: rgba(11, 11, 11, 0.7);
+    --border-color: rgba(11, 11, 11, 0.1);
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --hero-overlay: linear-gradient(to bottom, rgba(248, 246, 242, 0.4) 0%, transparent 50%, rgba(248, 246, 242, 0.8) 100%);
+  }
+
+  .dark {
+    --bg-primary: #0B0B0B;
+    --bg-secondary: #161616;
+    --text-primary: #F8F6F2;
+    --text-secondary: rgba(248, 246, 242, 0.7);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --card-bg: rgba(22, 22, 22, 0.8);
+    --hero-overlay: linear-gradient(to bottom, rgba(11, 11, 11, 0.6) 0%, transparent 50%, rgba(11, 11, 11, 0.9) 100%);
+  }
+
   body {
-    @apply bg-luxury-black text-luxury-offwhite font-sans antialiased selection:bg-luxury-gold selection:text-luxury-black;
+    @apply bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans antialiased selection:bg-luxury-gold selection:text-[var(--bg-primary)] transition-colors duration-500;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+    @apply font-serif text-center;
+  }
+
+  p {
+    @apply text-center;
+  }
+
+  section {
+    @apply py-16 md:py-20; /* Further reduced padding for expert compact look */
   }
 }
 
 .glass-card {
-  @apply bg-white/5 backdrop-blur-md border border-white/10;
+  @apply bg-[var(--card-bg)] backdrop-blur-xl border border-[var(--border-color)] shadow-[0_8px_32px_0_rgba(0,0,0,0.1)];
+}
+
+.dark .glass-card {
+  @apply shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
+}
+
+.glass-card-hover {
+  @apply hover:bg-white/10 hover:border-luxury-gold/30 transition-all duration-700;
 }
 
 .gold-gradient {
@@ -36,15 +72,36 @@
   -webkit-text-fill-color: transparent;
 }
 
+.futuristic-glow {
+  box-shadow: 0 0 20px rgba(201, 162, 74, 0.2);
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-luxury-black;
+  @apply bg-[var(--bg-primary)];
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-luxury-gold/30 hover:bg-luxury-gold/50 transition-colors;
+
+.bg-grid-pattern {
+  background-image: radial-gradient(rgba(201, 162, 74, 0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.bg-dots-pattern {
+  background-image: radial-gradient(circle, rgba(201, 162, 74, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
 }

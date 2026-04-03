@@ -1,4 +1,19 @@
 import { motion, useScroll, useTransform, useSpring, useInView, AnimatePresence } from "motion/react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { 
+  OrbitControls, 
+  PerspectiveCamera, 
+  Environment, 
+  ContactShadows, 
+  Float, 
+  Text,
+  Html,
+  PresentationControls,
+  Stage,
+  Bounds,
+  useBounds
+} from "@react-three/drei";
+import * as THREE from "three";
 import { 
   MapPin, 
   Shield, 
@@ -24,16 +39,719 @@ import {
   Sofa,
   Utensils,
   Maximize,
-  Info
+  Info,
+  Quote,
+  Box,
+  Activity,
+  Target,
+  Rocket,
+  Globe,
+  Zap,
+  Cpu,
+  Layers,
+  Wind,
+  Sun,
+  Moon,
+  FileText,
+  ExternalLink
 } from "lucide-react";
-import { useState, useEffect, useRef, ReactNode } from "react";
+import { useState, useEffect, useRef, ReactNode, createContext, useContext } from "react";
 
 // --- Types ---
 type Page = 'home' | 'project' | 'about' | 'gallery' | 'contact';
+type Theme = 'dark' | 'light';
+
+interface ThemeContextType {
+  theme: Theme;
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error("useTheme must be used within a ThemeProvider");
+  return context;
+};
+
+const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [theme, setTheme] = useState<Theme>('dark');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as Theme;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+      setTheme('light');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+
+interface RevealProps {
+  children: ReactNode;
+  width?: "fit-content" | "100%";
+  delay?: number;
+}
+
+// --- 3D Components ---
+
+const Room = ({ position, size, color, name, description, onSelect, isSelected }: { 
+  position: [number, number, number], 
+  size: [number, number, number], 
+  color: string, 
+  name: string,
+  description: string,
+  onSelect: () => void,
+  isSelected: boolean
+}) => {
+  const [hovered, setHovered] = useState(false);
+  const meshRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.scale.y = THREE.MathUtils.lerp(meshRef.current.scale.y, isSelected ? 1.2 : 1, 0.1);
+      meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, isSelected ? size[1] / 2 + 0.2 : size[1] / 2, 0.1);
+    }
+  });
+
+  return (
+    <group position={position}>
+      <mesh
+        ref={meshRef}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect();
+        }}
+      >
+        <boxGeometry args={size} />
+        <meshStandardMaterial 
+          color={isSelected ? "#D4AF37" : hovered ? "#E5C158" : color} 
+          roughness={0.3}
+          metalness={0.8}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+      
+      {/* Room Label */}
+      <Text
+        position={[0, size[1] + 0.5, 0]}
+        fontSize={0.3}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+        font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff"
+      >
+        {name}
+      </Text>
+
+      {/* Selection Ring */}
+      {isSelected && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -size[1]/2 + 0.01, 0]}>
+          <ringGeometry args={[size[0]/2 + 0.1, size[0]/2 + 0.2, 32]} />
+          <meshBasicMaterial color="#D4AF37" transparent opacity={0.5} />
+        </mesh>
+      )}
+    </group>
+  );
+};
+
+const VillaModel = ({ onRoomSelect, selectedRoom }: { onRoomSelect: (room: any) => void, selectedRoom: any }) => {
+  const rooms = [
+    { name: "Master Suite", pos: [-3, 1, -2], size: [4, 2, 4], color: "#1a1a1a", desc: "A sprawling sanctuary with panoramic views and a private terrace." },
+    { name: "Grand Living", pos: [2, 1, 0], size: [6, 2, 8], color: "#222222", desc: "Double-height ceilings and floor-to-ceiling glass walls for ultimate luxury." },
+    { name: "Dining Hall", pos: [-3, 1, 3], size: [4, 2, 4], color: "#1a1a1a", desc: "An elegant space for fine dining and hosting elite gatherings." },
+    { name: "Private Cinema", pos: [6, 1, -3], size: [3, 2, 4], color: "#111111", desc: "State-of-the-art acoustic design with premium leather seating." },
+    { name: "Infinity Pool", pos: [0, 0.2, 6], size: [10, 0.4, 4], color: "#003366", desc: "A temperature-controlled pool overlooking the lush greenery." },
+  ];
+
+  return (
+    <group>
+      {/* Base Floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
+        <planeGeometry args={[25, 25]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={1} />
+      </mesh>
+
+      {/* Grid Helper for luxury feel */}
+      <gridHelper args={[20, 20, "#D4AF37", "#1a1a1a"]} position={[0, 0, 0]} />
+
+      {rooms.map((room, i) => (
+        <Room 
+          key={i}
+          position={room.pos as [number, number, number]}
+          size={room.size as [number, number, number]}
+          color={room.color}
+          name={room.name}
+          description={room.desc}
+          onSelect={() => onRoomSelect(room)}
+          isSelected={selectedRoom?.name === room.name}
+        />
+      ))}
+
+      {/* Ambient Lighting */}
+      <ambientLight intensity={0.5} />
+      <pointLight position={[10, 10, 10]} intensity={1.5} color="#D4AF37" />
+      <spotLight position={[-10, 15, 10]} angle={0.3} penumbra={1} intensity={2} castShadow />
+    </group>
+  );
+};
+
+const Villa3DExperience = () => {
+  const [selectedRoom, setSelectedRoom] = useState<any>(null);
+
+  return (
+    <div className="w-full h-[700px] relative bg-[var(--bg-secondary)] rounded-sm overflow-hidden border border-[var(--border-color)] group">
+      <div className="absolute top-10 left-10 z-10 pointer-events-none">
+        <h3 className="text-3xl font-serif text-luxury-gold mb-2">3D Interactive Villa</h3>
+        <p className="text-[var(--text-secondary)] text-xs uppercase tracking-[0.3em]">Explore the Masterpiece</p>
+      </div>
+
+      <Canvas shadows dpr={[1, 2]}>
+        <PerspectiveCamera makeDefault position={[12, 12, 12]} fov={40} />
+        <OrbitControls 
+          enablePan={false} 
+          maxPolarAngle={Math.PI / 2.1} 
+          minDistance={10} 
+          maxDistance={25}
+          autoRotate={!selectedRoom}
+          autoRotateSpeed={0.5}
+        />
+        
+        <Environment preset="night" />
+        
+        <VillaModel 
+          selectedRoom={selectedRoom}
+          onRoomSelect={(room) => setSelectedRoom(room)} 
+        />
+        
+        <ContactShadows position={[0, -0.1, 0]} opacity={0.4} scale={20} blur={2} far={4.5} />
+      </Canvas>
+
+      {/* UI Overlay for Room Details */}
+      <AnimatePresence>
+        {selectedRoom && (
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 50 }}
+            className="absolute top-10 right-10 bottom-10 w-96 glass-card p-10 flex flex-col justify-between z-20 border-l border-luxury-gold/20"
+          >
+            <button 
+              onClick={() => setSelectedRoom(null)}
+              className="absolute top-6 right-6 text-[var(--text-secondary)] hover:text-luxury-gold transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <div>
+              <span className="text-luxury-gold text-[10px] uppercase tracking-[0.5em] font-bold mb-6 block">Room Details</span>
+              <h4 className="text-4xl font-serif mb-6 text-[var(--text-primary)]">{selectedRoom.name}</h4>
+              <p className="text-[var(--text-secondary)] leading-relaxed font-light mb-10">
+                {selectedRoom.description}
+              </p>
+              
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
+                  <span className="text-[var(--text-secondary)] text-xs uppercase tracking-widest">Area</span>
+                  <span className="text-luxury-gold font-serif">1,200 Sq.Ft.</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
+                  <span className="text-[var(--text-secondary)] text-xs uppercase tracking-widest">Flooring</span>
+                  <span className="text-luxury-gold font-serif">Italian Marble</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
+                  <span className="text-[var(--text-secondary)] text-xs uppercase tracking-widest">Smart Home</span>
+                  <span className="text-luxury-gold font-serif">Fully Integrated</span>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setSelectedRoom(null)}
+              className="w-full py-5 border border-luxury-gold/30 text-luxury-gold text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-luxury-gold hover:text-[var(--bg-primary)] transition-all duration-500"
+            >
+              Back to Overview
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="absolute bottom-10 left-10 text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.2em] pointer-events-none">
+        Use mouse to rotate & zoom • Click rooms for details
+      </div>
+    </div>
+  );
+};
 
 // --- Components ---
 
-const Reveal = ({ children, width = "100%", delay = 0.2 }: { children: ReactNode, width?: "100%" | "fit-content", delay?: number }) => {
+// --- Components ---
+
+const LoadingScreen = () => {
+  return (
+    <motion.div 
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-0 z-[200] bg-[var(--bg-primary)] flex flex-col items-center justify-center overflow-hidden"
+    >
+      <div className="relative w-48 h-48 flex items-center justify-center">
+        {/* Animated Logo Placeholder */}
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="relative z-10"
+        >
+          <div className="w-20 h-20 bg-luxury-gold flex items-center justify-center rounded-sm">
+            <span className="text-[var(--bg-primary)] font-serif font-bold text-4xl">R</span>
+          </div>
+        </motion.div>
+        
+        {/* Pulsing Rings */}
+        {[1, 2, 3].map((i) => (
+          <motion.div
+            key={i}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 2.5, opacity: 0 }}
+            transition={{ 
+              duration: 3, 
+              repeat: Infinity, 
+              delay: i * 0.8,
+              ease: "easeOut" 
+            }}
+            className="absolute inset-0 border border-luxury-gold/20 rounded-full"
+          ></motion.div>
+        ))}
+      </div>
+      
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5, duration: 1 }}
+        className="mt-12 text-center"
+      >
+        <h2 className="text-2xl font-serif text-[var(--text-primary)] tracking-widest mb-2">RAMKY BRINDAVANAM</h2>
+        <div className="flex items-center justify-center space-x-2">
+          <div className="w-12 h-[1px] bg-luxury-gold/30"></div>
+          <span className="text-[10px] text-luxury-gold uppercase tracking-[0.5em] font-bold">The Future of Living</span>
+          <div className="w-12 h-[1px] bg-luxury-gold/30"></div>
+        </div>
+      </motion.div>
+
+      {/* Progress Bar */}
+      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-64 h-[1px] bg-[var(--border-color)]">
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: "100%" }}
+          transition={{ duration: 2.5, ease: "easeInOut" }}
+          className="h-full bg-luxury-gold"
+        ></motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
+const HeroCarousel = ({ onCtaClick }: { onCtaClick: () => void }) => {
+  const [current, setCurrent] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const slides = [
+    {
+      image: "https://images.unsplash.com/photo-1449156001935-d2863fb72690?q=80&w=2070&auto=format&fit=crop",
+      title: "The Pinnacle of Living",
+      subtitle: "Ramky’s Brindavanam",
+      desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
+    },
+    {
+      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop",
+      title: "Strategic Investment",
+      subtitle: "Future City Growth",
+      desc: "Positioned in the 4th Growth Zone of Hyderabad, ensuring unparalleled appreciation and ROI."
+    },
+    {
+      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop",
+      title: "Architectural Excellence",
+      subtitle: "Curated Luxury",
+      desc: "Meticulously planned infrastructure with underground cabling, wide roads, and elite amenities."
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 500], [0, 200]);
+
+  return (
+    <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-[var(--bg-primary)]">
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key={current}
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 2.5, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-0 z-0"
+        >
+          <motion.div style={{ y }} className="w-full h-full">
+            {!isLoaded && (
+              <div className="absolute inset-0 bg-[var(--border-color)] animate-pulse flex items-center justify-center">
+                <div className="w-20 h-20 border-2 border-luxury-gold/20 border-t-luxury-gold rounded-full animate-spin"></div>
+              </div>
+            )}
+            <img 
+              src={slides[current].image} 
+              alt={slides[current].subtitle} 
+              onLoad={() => setIsLoaded(true)}
+              className={`w-full h-full object-cover transition-opacity duration-1000 ${isLoaded ? 'opacity-70' : 'opacity-0'}`}
+              referrerPolicy="no-referrer"
+              loading={current === 0 ? "eager" : "lazy"}
+            />
+          </motion.div>
+          <div className="absolute inset-0 bg-[var(--hero-overlay)]"></div>
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="container mx-auto px-6 relative z-10 text-center">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={current}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span className="text-luxury-gold text-xs md:text-sm uppercase tracking-[0.6em] font-bold mb-8 block">
+              {slides[current].title}
+            </span>
+            <h1 className="text-6xl md:text-9xl lg:text-[10rem] font-serif mb-10 leading-[0.9] tracking-tighter text-[var(--text-primary)]">
+              {slides[current].subtitle.split(' ')[0]} <br />
+              <span className="italic text-gold-gradient">{slides[current].subtitle.split(' ').slice(1).join(' ')}</span>
+            </h1>
+            <p className="text-[var(--text-secondary)] text-xl md:text-2xl max-w-3xl mx-auto mb-16 font-light tracking-wide leading-relaxed">
+              {slides[current].desc}
+            </p>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+              <button 
+                onClick={onCtaClick}
+                className="px-12 py-6 bg-luxury-gold text-[var(--bg-primary)] text-sm uppercase tracking-[0.3em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm flex items-center group shadow-2xl shadow-luxury-gold/20"
+              >
+                Schedule a Site Visit
+                <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+              </button>
+              <button className="px-12 py-6 border border-[var(--border-color)] text-[var(--text-primary)] text-sm uppercase tracking-[0.3em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm backdrop-blur-sm">
+                View Master Plan
+              </button>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Carousel Indicators */}
+      <div className="absolute bottom-12 left-12 flex flex-col space-y-4 z-20">
+        {slides.map((_, i) => (
+          <button 
+            key={i}
+            onClick={() => setCurrent(i)}
+            className="group flex items-center space-x-4"
+          >
+            <div className={`h-[2px] transition-all duration-700 ${current === i ? 'w-12 bg-luxury-gold' : 'w-6 bg-white/20 group-hover:bg-white/40'}`}></div>
+            <span className={`text-[10px] uppercase tracking-widest font-bold transition-colors duration-700 ${current === i ? 'text-luxury-gold' : 'text-white/20 group-hover:text-white/40'}`}>0{i + 1}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Scroll Indicator */}
+      <motion.div 
+        animate={{ y: [0, 15, 0] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-12 right-12 flex flex-col items-center opacity-40"
+      >
+        <span className="text-[10px] uppercase tracking-[0.4em] mb-4 font-bold">Scroll</span>
+        <div className="w-[1px] h-16 bg-gradient-to-b from-luxury-gold to-transparent"></div>
+      </motion.div>
+    </section>
+  );
+};
+
+const MasterPlanSection = () => {
+  return (
+    <section className="py-16 md:py-20 bg-[var(--bg-secondary)] relative overflow-hidden">
+      {/* Decorative SVG */}
+      <div className="absolute -top-24 -right-24 w-96 h-96 border border-luxury-gold/10 rounded-full pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-96 h-96 border border-luxury-gold/10 rounded-full pointer-events-none" />
+      
+      <div className="container mx-auto px-6 relative z-10">
+        <SectionHeading title="The Master Plan" subtitle="Strategic Project Layout" />
+        
+        <div className="relative group mt-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-sm overflow-hidden border border-[var(--border-color)] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative"
+          >
+            <img 
+              src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop" 
+              alt="Master Plan Overview" 
+              className="w-full aspect-video object-cover opacity-80 group-hover:scale-105 transition-transform duration-[3s]"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-luxury-black/90 via-transparent to-transparent"></div>
+            
+            {/* Interactive Hotspots */}
+            <div className="absolute top-1/4 left-1/3 group/hotspot">
+              <div className="w-4 h-4 bg-luxury-gold rounded-full animate-ping absolute"></div>
+              <div className="w-4 h-4 bg-luxury-gold rounded-full relative z-10 cursor-pointer"></div>
+              <div className="absolute top-8 left-0 w-48 glass-card p-4 opacity-0 group-hover/hotspot:opacity-100 transition-opacity duration-500 pointer-events-none">
+                <h5 className="text-luxury-gold font-serif text-sm mb-1">Grand Clubhouse</h5>
+                <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest">50,000 Sq.Ft. Luxury</p>
+              </div>
+            </div>
+
+            <div className="absolute bottom-1/3 right-1/4 group/hotspot">
+              <div className="w-4 h-4 bg-luxury-gold rounded-full animate-ping absolute"></div>
+              <div className="w-4 h-4 bg-luxury-gold rounded-full relative z-10 cursor-pointer"></div>
+              <div className="absolute bottom-8 right-0 w-48 glass-card p-4 opacity-0 group-hover/hotspot:opacity-100 transition-opacity duration-500 pointer-events-none">
+                <h5 className="text-luxury-gold font-serif text-sm mb-1">Themed Parks</h5>
+                <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest">Zen & Serenity Zones</p>
+              </div>
+            </div>
+
+            <div className="absolute top-1/2 right-1/3 group/hotspot">
+              <div className="w-4 h-4 bg-luxury-gold rounded-full animate-ping absolute"></div>
+              <div className="w-4 h-4 bg-luxury-gold rounded-full relative z-10 cursor-pointer"></div>
+              <div className="absolute top-8 right-0 w-48 glass-card p-4 opacity-0 group-hover/hotspot:opacity-100 transition-opacity duration-500 pointer-events-none">
+                <h5 className="text-luxury-gold font-serif text-sm mb-1">Goshala</h5>
+                <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest">Sustainable Living</p>
+              </div>
+            </div>
+          </motion.div>
+          
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { label: "Total Area", value: "100 Acres" },
+              { label: "Open Space", value: "45%" },
+              { label: "Total Plots", value: "450+" }
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.2 }}
+                className="text-center p-8 border border-luxury-gold/10 rounded-sm hover:border-luxury-gold/30 transition-all duration-500"
+              >
+                <p className="text-luxury-gold font-mono text-xs uppercase tracking-[0.3em] mb-2">{stat.label}</p>
+                <p className="text-3xl font-serif text-[var(--text-primary)]">{stat.value}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const FutureCityVision = () => {
+  return (
+    <section className="py-24 md:py-32 bg-[var(--bg-primary)] relative overflow-hidden">
+      {/* Background Grid */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, #C9A24A 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <SectionHeading title="The Future City Vision" subtitle="A Strategic Masterpiece" />
+
+        <div className="max-w-6xl mx-auto mt-20 space-y-32">
+          {/* Step 1: Vision + Growth */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="text-center"
+          >
+            <div className="inline-block p-4 bg-luxury-gold/10 rounded-full mb-8">
+              <Globe className="text-luxury-gold" size={48} />
+            </div>
+            <h3 className="text-4xl md:text-5xl font-serif mb-6 text-[var(--text-primary)] tracking-tight">Unprecedented Growth</h3>
+            <p className="text-[var(--text-secondary)] text-lg md:text-xl max-w-3xl mx-auto font-light leading-relaxed">
+              A visionary blueprint for a 100-acre legacy in the heart of Hyderabad's next global growth engine.
+            </p>
+          </motion.div>
+
+          {/* Step 2: AI City + World Trade Center */}
+          <div className="relative">
+            {/* Animated Connecting Line */}
+            <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-luxury-gold/20 -translate-y-1/2 hidden lg:block overflow-hidden">
+              <motion.div 
+                initial={{ x: "-100%" }}
+                whileInView={{ x: "100%" }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                className="w-1/2 h-full bg-gradient-to-r from-transparent via-luxury-gold to-transparent"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1, delay: 0.2 }}
+                className="glass-card p-10 md:p-12 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/40 transition-all duration-700 group"
+              >
+                <div className="w-16 h-16 bg-luxury-gold/10 rounded-sm flex items-center justify-center text-luxury-gold mb-8 group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700">
+                  <Cpu size={32} />
+                </div>
+                <h4 className="text-2xl font-serif mb-4 text-[var(--text-primary)]">AI City</h4>
+                <p className="text-[var(--text-secondary)] text-base font-light leading-relaxed">
+                  The upcoming global hub for artificial intelligence and tech innovation, attracting world-class talent and enterprises.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1, delay: 0.4 }}
+                className="glass-card p-10 md:p-12 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/40 transition-all duration-700 group"
+              >
+                <div className="w-16 h-16 bg-luxury-gold/10 rounded-sm flex items-center justify-center text-luxury-gold mb-8 group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700">
+                  <Building2 size={32} />
+                </div>
+                <h4 className="text-2xl font-serif mb-4 text-[var(--text-primary)]">World Trade Center</h4>
+                <p className="text-[var(--text-secondary)] text-base font-light leading-relaxed">
+                  A massive commercial landmark driving business and value, positioning the region as a premier trade destination.
+                </p>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Step 3: Health City + Education Hub */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, delay: 0.6 }}
+              className="glass-card p-10 md:p-12 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/40 transition-all duration-700 group text-center"
+            >
+              <div className="w-16 h-16 bg-luxury-gold/10 rounded-sm flex items-center justify-center text-luxury-gold mb-8 group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700">
+                <Activity size={32} />
+              </div>
+              <h4 className="text-2xl font-serif mb-4 text-[var(--text-primary)]">Health City</h4>
+              <p className="text-[var(--text-secondary)] text-base font-light leading-relaxed">
+                World-class medical facilities and wellness centers nearby, ensuring top-tier healthcare for all residents.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, delay: 0.8 }}
+              className="glass-card p-10 md:p-12 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/40 transition-all duration-700 group text-center"
+            >
+              <div className="w-16 h-16 bg-luxury-gold/10 rounded-sm flex items-center justify-center text-luxury-gold mb-8 mx-auto group-hover:scale-110 transition-transform duration-700">
+                <Rocket size={32} />
+              </div>
+              <h4 className="text-2xl font-serif mb-4 text-[var(--text-primary)]">Education Hub</h4>
+              <p className="text-[var(--text-secondary)] text-base font-light leading-relaxed">
+                Top-tier international schools and universities in the vicinity, fostering a culture of learning and excellence.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Background Glows */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-luxury-gold/5 rounded-full blur-[120px] -z-10"></div>
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-luxury-gold/5 rounded-full blur-[120px] -z-10"></div>
+    </section>
+  );
+};
+
+const VisionMissionSection = () => {
+  const items = [
+    {
+      title: "Our Vision",
+      desc: "To redefine luxury living by creating sustainable, tech-enabled ecosystems that empower the next generation of global citizens.",
+      icon: Globe,
+      gradient: "from-blue-500/20 to-luxury-gold/20"
+    },
+    {
+      title: "Our Mission",
+      desc: "To deliver excellence through innovation, transparency, and architectural brilliance, ensuring every project is a legacy for our investors.",
+      icon: Target,
+      gradient: "from-luxury-gold/20 to-orange-500/20"
+    }
+  ];
+
+  return (
+    <section className="py-24 md:py-32 bg-[var(--bg-secondary)] relative overflow-hidden">
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16">
+          {items.map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: i === 0 ? -50 : 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+              className="relative group h-full"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-1000 rounded-sm -z-10`}></div>
+              <div className="glass-card p-12 md:p-20 h-full flex flex-col justify-center border-[var(--border-color)] group-hover:border-luxury-gold/30 transition-all duration-700">
+                <div className="w-16 h-16 bg-luxury-gold/10 rounded-sm flex items-center justify-center text-luxury-gold mb-8 group-hover:scale-110 group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700">
+                  <item.icon size={32} />
+                </div>
+                <h3 className="text-4xl md:text-5xl font-serif mb-6 text-[var(--text-primary)] tracking-tight">{item.title}</h3>
+                <p className="text-[var(--text-secondary)] text-lg leading-relaxed font-light max-w-xl">
+                  {item.desc}
+                </p>
+                
+                {/* Abstract Shape */}
+                <div className="absolute top-10 right-10 opacity-5 group-hover:opacity-10 transition-opacity duration-700">
+                  <item.icon size={120} />
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+const Reveal = ({ children, width = "fit-content", delay = 0.25 }: RevealProps) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
@@ -57,6 +775,7 @@ const Reveal = ({ children, width = "100%", delay = 0.2 }: { children: ReactNode
 const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage: (p: Page) => void }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -73,147 +792,250 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${isScrolled ? "bg-luxury-black/90 backdrop-blur-lg py-4 shadow-2xl" : "bg-transparent py-8"}`}>
+    <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${isScrolled ? "bg-[var(--bg-primary)]/90 backdrop-blur-lg py-3 shadow-2xl" : "bg-transparent py-6"}`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
         <div 
           className="flex items-center cursor-pointer group"
           onClick={() => setActivePage('home')}
         >
+          <div className="w-10 h-10 bg-luxury-gold flex items-center justify-center rounded-sm mr-4 group-hover:scale-110 transition-transform duration-500">
+            <span className="text-[var(--bg-primary)] font-serif font-bold text-xl">R</span>
+          </div>
           <div className="relative">
-            <span className="text-2xl md:text-3xl font-serif font-bold tracking-tighter text-luxury-gold group-hover:text-luxury-offwhite transition-colors">RAMKY</span>
+            <span className="text-2xl md:text-3xl font-serif font-bold tracking-tighter text-luxury-gold group-hover:text-[var(--text-primary)] transition-colors">RAMKY</span>
             <div className="absolute -bottom-1 left-0 w-0 h-[1px] bg-luxury-gold group-hover:w-full transition-all duration-500"></div>
           </div>
           <div className="ml-3 border-l border-luxury-gold/30 pl-3 hidden md:block">
-            <p className="text-[10px] uppercase tracking-[0.3em] font-medium text-luxury-offwhite/70">Infra & Developers</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] font-medium text-[var(--text-secondary)]">Infra & Developers</p>
           </div>
         </div>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center space-x-10">
+        <div className="hidden lg:flex items-center space-x-8">
           {navLinks.map((link) => (
             <button
               key={link.id}
               onClick={() => setActivePage(link.id)}
-              className={`text-xs uppercase tracking-[0.2em] font-medium transition-all relative group ${activePage === link.id ? "text-luxury-gold" : "text-luxury-offwhite/70 hover:text-luxury-offwhite"}`}
+              className={`text-[10px] uppercase tracking-[0.2em] font-bold transition-all relative group ${activePage === link.id ? "text-luxury-gold" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
             >
               {link.label}
               <span className={`absolute -bottom-2 left-0 h-[1px] bg-luxury-gold transition-all duration-500 ${activePage === link.id ? "w-full" : "w-0 group-hover:w-full"}`}></span>
             </button>
           ))}
+          
+          <div className="h-6 w-[1px] bg-[var(--border-color)] mx-2"></div>
+          
+          <button 
+            onClick={toggleTheme}
+            className="p-2 text-luxury-gold hover:bg-luxury-gold/10 rounded-full transition-all"
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
           <button 
             onClick={() => setActivePage('contact')}
-            className="px-8 py-3 bg-luxury-gold text-luxury-black text-xs uppercase tracking-widest font-bold hover:bg-luxury-offwhite transition-all duration-500 rounded-sm"
+            className="px-6 py-2 bg-luxury-gold text-[var(--bg-primary)] text-[10px] uppercase tracking-widest font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-500 rounded-sm"
           >
             Enquire Now
           </button>
         </div>
 
         {/* Mobile Toggle */}
-        <button className="lg:hidden text-luxury-gold" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
+        <div className="flex items-center space-x-4 lg:hidden">
+          <button 
+            onClick={toggleTheme}
+            className="p-2 text-luxury-gold"
+          >
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+          <button className="text-luxury-gold" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="lg:hidden absolute top-full left-0 w-full bg-luxury-black border-t border-white/10 py-10 px-6 flex flex-col space-y-6 items-center shadow-2xl"
-        >
-          {navLinks.map((link) => (
-            <button
-              key={link.id}
-              onClick={() => { setActivePage(link.id); setIsMobileMenuOpen(false); }}
-              className={`text-lg font-serif tracking-wide ${activePage === link.id ? "text-luxury-gold" : "text-luxury-offwhite"}`}
-            >
-              {link.label}
-            </button>
-          ))}
-          <button 
-            onClick={() => { setActivePage('contact'); setIsMobileMenuOpen(false); }}
-            className="w-full py-4 bg-luxury-gold text-luxury-black text-sm uppercase tracking-widest font-bold"
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="lg:hidden absolute top-full left-0 w-full bg-[var(--bg-primary)] border-t border-[var(--border-color)] py-10 px-6 flex flex-col space-y-6 items-center shadow-2xl overflow-hidden"
           >
-            Enquire Now
-          </button>
-        </motion.div>
-      )}
+            {navLinks.map((link) => (
+              <button
+                key={link.id}
+                onClick={() => { setActivePage(link.id); setIsMobileMenuOpen(false); }}
+                className={`text-lg font-serif tracking-wide ${activePage === link.id ? "text-luxury-gold" : "text-[var(--text-primary)]"}`}
+              >
+                {link.label}
+              </button>
+            ))}
+            <button 
+              onClick={() => { setActivePage('contact'); setIsMobileMenuOpen(false); }}
+              className="w-full py-4 bg-luxury-gold text-[var(--bg-primary)] text-sm uppercase tracking-widest font-bold"
+            >
+              Enquire Now
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };
 
 const Hero = ({ onCtaClick }: { onCtaClick: () => void }) => {
-  const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 500], [0, 200]);
-  const opacity = useTransform(scrollY, [0, 300], [1, 0]);
-  const scale = useTransform(scrollY, [0, 500], [1, 1.1]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const slides = [
+    {
+      image: "https://images.unsplash.com/photo-1449156001935-d2863fb72690?q=80&w=2070&auto=format&fit=crop",
+      title: "Ramky’s Brindavanam",
+      subtitle: "The Pinnacle of Living",
+      desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
+    },
+    {
+      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop",
+      title: "Future City Growth",
+      subtitle: "Strategic Investment",
+      desc: "Positioned at the epicenter of Hyderabad's next global growth engine with massive appreciation potential."
+    },
+    {
+      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop",
+      title: "Architectural Marvel",
+      subtitle: "Modern Infrastructure",
+      desc: "Experience world-class amenities and futuristic design that redefines urban luxury living."
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
 
   return (
-    <section className="relative h-screen w-full overflow-hidden flex items-center justify-center">
-      {/* Background Video/Image Placeholder */}
-      <motion.div style={{ y: y1, scale }} className="absolute inset-0 z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1449156001935-d2863fb72690?q=80&w=2070&auto=format&fit=crop" 
-          alt="Luxury Real Estate Sunset" 
-          className="w-full h-full object-cover opacity-70"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-luxury-black/40 via-transparent to-luxury-black"></div>
-      </motion.div>
+    <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-[var(--bg-primary)]">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-0 z-0"
+        >
+          {!isLoaded && (
+            <div className="absolute inset-0 bg-luxury-gray/20 animate-pulse flex items-center justify-center">
+              <div className="w-16 h-16 border-2 border-luxury-gold/20 border-t-luxury-gold rounded-full animate-spin"></div>
+            </div>
+          )}
+          <img 
+            src={slides[currentSlide].image} 
+            alt={slides[currentSlide].title} 
+            onLoad={() => setIsLoaded(true)}
+            className={`w-full h-full object-cover transition-opacity duration-1000 ${isLoaded ? 'opacity-50 dark:opacity-40' : 'opacity-0'}`}
+            referrerPolicy="no-referrer"
+            loading={currentSlide === 0 ? "eager" : "lazy"}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-primary)]/60 via-transparent to-[var(--bg-primary)]"></div>
+        </motion.div>
+      </AnimatePresence>
 
       <div className="container mx-auto px-6 relative z-10 text-center">
-        <motion.div
-          style={{ opacity }}
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span className="text-luxury-gold text-[10px] md:text-xs uppercase tracking-[0.8em] font-bold mb-6 block">
+              {slides[currentSlide].subtitle}
+            </span>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif mb-8 leading-[1.1] tracking-tighter text-[var(--text-primary)]">
+              {slides[currentSlide].title.split(' ').map((word, i) => (
+                <span key={i} className={i === 1 ? "italic text-gold-gradient" : ""}>
+                  {word}{' '}
+                </span>
+              ))}
+            </h1>
+            <p className="text-[var(--text-secondary)] text-base md:text-lg max-w-2xl mx-auto mb-12 font-light tracking-wide leading-relaxed">
+              {slides[currentSlide].desc}
+            </p>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+              <button 
+                onClick={onCtaClick}
+                className="px-10 py-5 bg-luxury-gold text-luxury-black text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm flex items-center group shadow-2xl shadow-luxury-gold/20"
+              >
+                Schedule a Site Visit
+                <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
+              </button>
+              <button className="px-10 py-5 border border-luxury-gold/20 text-[var(--text-primary)] text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-luxury-gold hover:text-luxury-black transition-all duration-700 rounded-sm backdrop-blur-sm">
+                View Master Plan
+              </button>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Navigation Arrows */}
+      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-6 md:px-12 pointer-events-none z-20">
+        <button 
+          onClick={prevSlide}
+          className="w-12 h-12 rounded-full border border-luxury-gold/20 flex items-center justify-center text-luxury-gold hover:bg-luxury-gold hover:text-luxury-black transition-all duration-500 pointer-events-auto backdrop-blur-sm"
         >
-          <span className="text-luxury-gold text-xs md:text-sm uppercase tracking-[0.6em] font-bold mb-8 block">The Pinnacle of Living</span>
-          <h1 className="text-6xl md:text-9xl lg:text-[10rem] font-serif mb-10 leading-[0.9] tracking-tighter">
-            Ramky’s <br />
-            <span className="italic text-gold-gradient">Brindavanam</span>
-          </h1>
-          <p className="text-luxury-offwhite/80 text-xl md:text-2xl max-w-3xl mx-auto mb-16 font-light tracking-wide leading-relaxed">
-            The Future of Investment Begins Here. A 100-acre legacy crafted for those who seek the extraordinary.
-          </p>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-            <button 
-              onClick={onCtaClick}
-              className="px-12 py-6 bg-luxury-gold text-luxury-black text-sm uppercase tracking-[0.3em] font-bold hover:bg-luxury-offwhite transition-all duration-700 rounded-sm flex items-center group shadow-2xl shadow-luxury-gold/20"
-            >
-              Schedule a Site Visit
-              <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
-            </button>
-            <button className="px-12 py-6 border border-luxury-offwhite/20 text-luxury-offwhite text-sm uppercase tracking-[0.3em] font-bold hover:bg-luxury-offwhite hover:text-luxury-black transition-all duration-700 rounded-sm backdrop-blur-sm">
-              View Master Plan
-            </button>
-          </div>
-        </motion.div>
+          <ChevronRight className="rotate-180" size={24} />
+        </button>
+        <button 
+          onClick={nextSlide}
+          className="w-12 h-12 rounded-full border border-luxury-gold/20 flex items-center justify-center text-luxury-gold hover:bg-luxury-gold hover:text-luxury-black transition-all duration-500 pointer-events-auto backdrop-blur-sm"
+        >
+          <ChevronRight size={24} />
+        </button>
+      </div>
+
+      {/* Manual Controls */}
+      <div className="absolute bottom-12 right-12 z-20 flex space-x-4">
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentSlide(i)}
+            className={`w-12 h-[2px] transition-all duration-500 ${currentSlide === i ? "bg-luxury-gold w-20" : "bg-luxury-gold/20 hover:bg-luxury-gold/40"}`}
+          />
+        ))}
       </div>
 
       {/* Scroll Indicator */}
       <motion.div 
-        animate={{ y: [0, 15, 0] }}
+        animate={{ y: [0, 10, 0] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center opacity-40"
+        className="absolute bottom-12 left-12 flex flex-col items-start opacity-40"
       >
-        <span className="text-[10px] uppercase tracking-[0.4em] mb-4 font-bold">Scroll</span>
-        <div className="w-[1px] h-16 bg-gradient-to-b from-luxury-gold to-transparent"></div>
+        <span className="text-[8px] uppercase tracking-[0.4em] mb-4 font-bold text-luxury-gold">Explore</span>
+        <div className="w-[1px] h-12 bg-gradient-to-b from-luxury-gold to-transparent"></div>
       </motion.div>
     </section>
   );
 };
 
-const SectionHeading = ({ title, subtitle, light = false }: { title: string, subtitle?: string, light?: boolean }) => (
-  <div className="mb-24 md:mb-32 text-center">
+const SectionHeading = ({ title, subtitle }: { title: string, subtitle?: string }) => (
+  <div className="mb-8 md:mb-12 text-center max-w-4xl mx-auto px-6">
     <Reveal>
-      <span className={`text-xs uppercase tracking-[0.5em] font-bold mb-6 block ${light ? "text-luxury-gold" : "text-luxury-gold"}`}>
+      <span className="text-[10px] md:text-xs uppercase tracking-[0.6em] font-bold mb-3 block text-luxury-gold">
         {subtitle}
       </span>
-      <h2 className={`text-5xl md:text-7xl font-serif leading-tight ${light ? "text-luxury-offwhite" : "text-luxury-offwhite"}`}>
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif leading-tight tracking-tight text-[var(--text-primary)]">
         {title}
       </h2>
-      <div className="w-32 h-[1px] bg-luxury-gold mx-auto mt-10 opacity-50"></div>
+      <div className="w-16 h-[1px] bg-luxury-gold mx-auto mt-4 opacity-40"></div>
     </Reveal>
   </div>
 );
@@ -223,16 +1045,16 @@ const SnapshotCard = ({ icon: Icon, title, value, description }: { icon: any, ti
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    whileHover={{ y: -15, scale: 1.02 }}
+    whileHover={{ y: -10, scale: 1.02 }}
     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-    className="glass-card p-12 rounded-sm border-white/5 hover:border-luxury-gold/40 transition-all duration-700 group"
+    className="glass-card p-10 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/40 transition-all duration-700 group text-center"
   >
-    <div className="w-20 h-20 bg-luxury-gold/10 rounded-full flex items-center justify-center mb-10 text-luxury-gold group-hover:bg-luxury-gold group-hover:text-luxury-black transition-all duration-700">
-      <Icon size={36} />
+    <div className="w-14 h-14 bg-luxury-gold/10 rounded-full flex items-center justify-center mb-6 text-luxury-gold group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700 mx-auto">
+      <Icon size={24} />
     </div>
-    <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold mb-4">{title}</p>
-    <h3 className="text-5xl font-serif mb-6 text-luxury-offwhite tracking-tight">{value}</h3>
-    <p className="text-luxury-offwhite/50 text-base leading-relaxed font-light">{description}</p>
+    <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold mb-3">{title}</p>
+    <h3 className="text-3xl font-serif mb-3 text-[var(--text-primary)] tracking-tight">{value}</h3>
+    <p className="text-[var(--text-secondary)] text-sm leading-relaxed font-light">{description}</p>
   </motion.div>
 );
 
@@ -326,7 +1148,7 @@ const ExitIntentPopup = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center px-6 bg-luxury-black/90 backdrop-blur-xl"
+          className="fixed inset-0 z-[100] flex items-center justify-center px-6 bg-[var(--bg-primary)]/90 backdrop-blur-xl"
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -336,25 +1158,25 @@ const ExitIntentPopup = () => {
           >
             <button 
               onClick={() => setIsVisible(false)}
-              className="absolute top-6 right-6 md:top-10 md:right-10 w-12 h-12 flex items-center justify-center rounded-full bg-white/5 text-luxury-offwhite/40 hover:text-luxury-gold hover:bg-white/10 transition-all duration-300 z-50 group"
+              className="absolute top-6 right-6 md:top-10 md:right-10 w-12 h-12 flex items-center justify-center rounded-full bg-white/5 text-[var(--text-secondary)] hover:text-luxury-gold hover:bg-white/10 transition-all duration-300 z-50 group"
               aria-label="Close popup"
             >
               <X size={32} className="group-hover:scale-110 transition-transform" />
             </button>
             
             <span className="text-luxury-gold text-xs uppercase tracking-[0.6em] font-bold mb-8 block">Exclusive Opportunity</span>
-            <h2 className="text-5xl md:text-7xl font-serif mb-10 leading-tight">Don't Miss the <br /><span className="italic">Future of Luxury</span></h2>
-            <p className="text-luxury-offwhite/60 text-xl mb-12 font-light leading-relaxed">
+            <h2 className="text-5xl md:text-7xl font-serif mb-10 leading-tight text-[var(--text-primary)]">Don't Miss the <br /><span className="italic">Future of Luxury</span></h2>
+            <p className="text-[var(--text-secondary)] text-xl mb-12 font-light leading-relaxed">
               Download our exclusive investment brochure and get a private tour of the 100-acre masterpiece.
             </p>
             
             <div className="flex flex-col md:flex-row gap-6">
-              <button className="px-10 py-5 bg-luxury-gold text-luxury-black text-sm uppercase tracking-[0.3em] font-bold hover:bg-luxury-offwhite transition-all duration-700 rounded-sm">
+              <button className="px-10 py-5 bg-luxury-gold text-[var(--bg-primary)] text-sm uppercase tracking-[0.3em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm">
                 Download Brochure
               </button>
               <button 
                 onClick={() => setIsVisible(false)}
-                className="px-10 py-5 border border-white/10 text-luxury-offwhite text-xs uppercase tracking-[0.3em] font-bold hover:bg-white/5 transition-all duration-500 rounded-sm"
+                className="px-10 py-5 border border-[var(--border-color)] text-[var(--text-primary)] text-xs uppercase tracking-[0.3em] font-bold hover:bg-white/5 transition-all duration-500 rounded-sm"
               >
                 Maybe Later
               </button>
@@ -370,6 +1192,7 @@ const InteractiveFloorPlan = () => {
   const [selectedPlan, setSelectedPlan] = useState(floorPlans[0]);
   const [activeRoom, setActiveRoom] = useState<Room | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1500);
@@ -377,13 +1200,43 @@ const InteractiveFloorPlan = () => {
   }, []);
 
   return (
-    <section className="py-48 bg-luxury-black">
+    <section className="py-24 md:py-32 bg-[var(--bg-primary)]">
       <div className="container mx-auto px-6">
-        <SectionHeading title="Interactive Floor Plans" subtitle="Experience Your Space" />
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+          <div className="text-left">
+            <span className="text-luxury-gold text-xs uppercase tracking-[0.5em] font-bold mb-4 block">Experience Your Space</span>
+            <h2 className="text-4xl md:text-6xl font-serif leading-tight text-[var(--text-primary)]">Architectural Vision</h2>
+          </div>
+          
+          <div className="flex bg-[var(--card-bg)] p-2 rounded-sm border border-[var(--border-color)] shadow-2xl">
+            <button 
+              onClick={() => setViewMode('2d')}
+              className={`px-8 py-3 text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-700 rounded-sm flex items-center ${viewMode === '2d' ? 'bg-luxury-gold text-[var(--bg-primary)] shadow-lg' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+            >
+              <Maximize className="mr-3" size={14} />
+              2D Blueprint
+            </button>
+            <button 
+              onClick={() => setViewMode('3d')}
+              className={`px-8 py-3 text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-700 rounded-sm flex items-center ${viewMode === '3d' ? 'bg-luxury-gold text-[var(--bg-primary)] shadow-lg' : 'text-[var(--text-secondary)] hover:text(--text-primary)]'}`}
+            >
+              <Box className="mr-3" size={14} />
+              3D Interactive
+            </button>
+          </div>
+        </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 items-start">
-          {/* SVG Floor Plan */}
-          <div className="lg:col-span-7 glass-card p-10 md:p-20 rounded-sm border-white/5 relative overflow-hidden min-h-[500px]">
+        <AnimatePresence mode="wait">
+          {viewMode === '2d' ? (
+            <motion.div 
+              key="2d"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"
+            >
+              {/* SVG Floor Plan */}
+              <div className="lg:col-span-7 glass-card p-8 md:p-16 rounded-sm border-[var(--border-color)] relative overflow-hidden min-h-[500px]">
             {isLoading ? (
               <div className="space-y-12">
                 <div className="space-y-4">
@@ -398,7 +1251,7 @@ const InteractiveFloorPlan = () => {
               <>
                 <div className="absolute top-10 left-10 z-10">
                   <h4 className="text-3xl font-serif text-luxury-gold mb-2">{selectedPlan.title}</h4>
-                  <p className="text-luxury-offwhite/40 uppercase tracking-widest text-xs font-bold">Total Area: {selectedPlan.totalArea}</p>
+                  <p className="text-[var(--text-secondary)] uppercase tracking-widest text-xs font-bold">Total Area: {selectedPlan.totalArea}</p>
                 </div>
 
                 <div className="relative aspect-square md:aspect-video flex items-center justify-center mt-20">
@@ -407,8 +1260,8 @@ const InteractiveFloorPlan = () => {
                       <motion.path
                         key={room.id}
                         d={room.path}
-                        fill={activeRoom?.id === room.id ? "rgba(201, 162, 74, 0.3)" : "rgba(255, 255, 255, 0.03)"}
-                        stroke={activeRoom?.id === room.id ? "#C9A24A" : "rgba(255, 255, 255, 0.1)"}
+                        fill={activeRoom?.id === room.id ? "rgba(201, 162, 74, 0.3)" : "rgba(201, 162, 74, 0.03)"}
+                        stroke={activeRoom?.id === room.id ? "#C9A24A" : "rgba(201, 162, 74, 0.1)"}
                         strokeWidth="1"
                         className="cursor-pointer transition-all duration-500 hover:fill-luxury-gold/20"
                         onClick={() => setActiveRoom(room)}
@@ -417,7 +1270,6 @@ const InteractiveFloorPlan = () => {
                     ))}
                     {/* Labels */}
                     {selectedPlan.rooms.map((room) => {
-                      // Simple centroid calculation for labels (hardcoded for demo)
                       const coords = room.id === 'living' ? {x: 100, y: 60} : 
                                     room.id === 'master' ? {x: 240, y: 60} :
                                     room.id === 'kitchen' ? {x: 60, y: 160} :
@@ -429,7 +1281,7 @@ const InteractiveFloorPlan = () => {
                           x={coords.x}
                           y={coords.y}
                           textAnchor="middle"
-                          className="fill-luxury-offwhite/30 text-[8px] uppercase tracking-widest font-bold pointer-events-none select-none"
+                          className="fill-[var(--text-secondary)] text-[8px] uppercase tracking-widest font-bold pointer-events-none select-none opacity-40"
                         >
                           {room.name}
                         </text>
@@ -438,7 +1290,7 @@ const InteractiveFloorPlan = () => {
                   </svg>
                 </div>
                 
-                <div className="mt-12 flex items-center space-x-6 text-luxury-offwhite/30 text-xs uppercase tracking-widest">
+                <div className="mt-12 flex items-center space-x-6 text-[var(--text-secondary)] text-xs uppercase tracking-widest">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 border border-luxury-gold/50 bg-luxury-gold/10"></div>
                     <span>Click room to explore</span>
@@ -477,7 +1329,7 @@ const InteractiveFloorPlan = () => {
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                     className="space-y-12"
                   >
-                    <div className="aspect-video rounded-sm overflow-hidden shadow-2xl border border-white/5">
+                    <div className="aspect-video rounded-sm overflow-hidden shadow-2xl border border-[var(--border-color)]">
                       <img 
                         src={activeRoom.image} 
                         alt={activeRoom.name} 
@@ -489,7 +1341,7 @@ const InteractiveFloorPlan = () => {
                     <div className="relative">
                       <button 
                         onClick={() => setActiveRoom(null)}
-                        className="absolute -top-4 -right-4 w-10 h-10 bg-luxury-gold text-luxury-black rounded-full flex items-center justify-center hover:bg-luxury-offwhite transition-colors z-20 shadow-xl"
+                        className="absolute -top-4 -right-4 w-10 h-10 bg-luxury-gold text-luxury-black rounded-full flex items-center justify-center hover:bg-[var(--bg-primary)] transition-colors z-20 shadow-xl"
                       >
                         <X size={20} />
                       </button>
@@ -504,14 +1356,14 @@ const InteractiveFloorPlan = () => {
                         <span className="text-luxury-gold text-sm uppercase tracking-widest font-bold">Area: {activeRoom.area}</span>
                       </div>
                       
-                      <p className="text-luxury-offwhite/60 text-xl leading-relaxed font-light">
+                      <p className="text-[var(--text-secondary)] text-xl leading-relaxed font-light">
                         {activeRoom.description}
                       </p>
                     </div>
 
                     <button 
                       onClick={() => setActiveRoom(null)}
-                      className="text-luxury-gold text-xs uppercase tracking-[0.4em] font-bold flex items-center hover:text-luxury-offwhite transition-colors group"
+                      className="text-luxury-gold text-xs uppercase tracking-[0.4em] font-bold flex items-center hover:text-[var(--text-primary)] transition-colors group"
                     >
                       <ArrowRight className="mr-4 rotate-180 group-hover:-translate-x-2 transition-transform" size={16} />
                       Back to Overview
@@ -521,13 +1373,13 @@ const InteractiveFloorPlan = () => {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="h-full flex flex-col justify-center items-center text-center p-12 border border-dashed border-white/10 rounded-sm"
+                    className="h-full flex flex-col justify-center items-center text-center p-12 border border-dashed border-[var(--border-color)] rounded-sm"
                   >
-                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center text-luxury-offwhite/20 mb-10">
+                    <div className="w-20 h-20 bg-[var(--card-bg)] rounded-full flex items-center justify-center text-luxury-gold/20 mb-10">
                       <Info size={40} />
                     </div>
-                    <h4 className="text-3xl font-serif mb-6 text-luxury-offwhite/40">Select a Room</h4>
-                    <p className="text-luxury-offwhite/20 text-lg font-light leading-relaxed max-w-xs">
+                    <h4 className="text-3xl font-serif mb-6 text-[var(--text-primary)] opacity-40">Select a Room</h4>
+                    <p className="text-[var(--text-secondary)] text-lg font-light leading-relaxed max-w-xs">
                       Click on any area of the floor plan to view high-resolution imagery and detailed specifications.
                     </p>
                   </motion.div>
@@ -535,7 +1387,18 @@ const InteractiveFloorPlan = () => {
               </AnimatePresence>
             )}
           </div>
-        </div>
+        </motion.div>
+      ) : (
+        <motion.div 
+          key="3d"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <Villa3DExperience />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );
@@ -547,9 +1410,9 @@ const AmenityCard = ({ icon: Icon, title, description }: { icon: any, title: str
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-    className="group relative overflow-hidden aspect-[4/5] bg-luxury-gray rounded-sm shadow-2xl"
+    className="group relative overflow-hidden aspect-[4/5] bg-[var(--bg-secondary)] rounded-sm shadow-2xl border border-[var(--border-color)]"
   >
-    <div className="absolute inset-0 bg-gradient-to-t from-luxury-black via-luxury-black/20 to-transparent z-10 opacity-80 group-hover:opacity-90 transition-opacity duration-700"></div>
+    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10 opacity-80 group-hover:opacity-90 transition-opacity duration-700"></div>
     <div className="absolute inset-0 scale-110 group-hover:scale-100 transition-transform duration-[2s] opacity-50 group-hover:opacity-70">
       <img 
         src={`https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop`} 
@@ -559,14 +1422,359 @@ const AmenityCard = ({ icon: Icon, title, description }: { icon: any, title: str
       />
     </div>
     <div className="absolute bottom-0 left-0 w-full p-10 z-20 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-700">
-      <div className="w-14 h-14 bg-luxury-gold text-luxury-black rounded-full flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700 shadow-xl shadow-luxury-gold/20">
-        <Icon size={28} />
+      <div className="w-12 h-12 bg-luxury-gold text-[var(--bg-primary)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-700 shadow-xl shadow-luxury-gold/20">
+        <Icon size={24} />
       </div>
-      <h4 className="text-3xl font-serif mb-4 text-luxury-offwhite tracking-tight">{title}</h4>
-      <p className="text-luxury-offwhite/50 text-base opacity-0 group-hover:opacity-100 transition-all duration-700 leading-relaxed font-light">{description}</p>
+      <h4 className="text-2xl font-serif mb-3 text-white tracking-tight">{title}</h4>
+      <p className="text-white/70 text-sm opacity-0 group-hover:opacity-100 transition-all duration-700 leading-relaxed font-light">{description}</p>
     </div>
   </motion.div>
 );
+
+const TestimonialCard = ({ quote, author, role, image }: { quote: string, author: string, role: string, image: string }) => {
+  const x = useSpring(0, { stiffness: 100, damping: 30 });
+  const y = useSpring(0, { stiffness: 100, damping: 30 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = (mouseX / width - 0.5) * 20;
+    const yPct = (mouseY / height - 0.5) * -20;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ rotateX: y, rotateY: x, transformStyle: "preserve-3d" }}
+      className="glass-card p-10 md:p-12 rounded-sm border-[var(--border-color)] relative group hover:border-luxury-gold/30 transition-all duration-700 cursor-default"
+    >
+      <div 
+        style={{ transform: "translateZ(50px)" }}
+        className="absolute -top-4 -left-4 w-12 h-12 bg-luxury-gold flex items-center justify-center text-[var(--bg-primary)] rounded-sm shadow-2xl z-10"
+      >
+        <Quote size={24} />
+      </div>
+      
+      <p 
+        style={{ transform: "translateZ(30px)" }}
+        className="text-[var(--text-secondary)] text-lg italic leading-relaxed font-light mb-10 relative z-0"
+      >
+        "{quote}"
+      </p>
+      
+      <div 
+        style={{ transform: "translateZ(40px)" }}
+        className="flex items-center space-x-4"
+      >
+        <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-luxury-gold/20 group-hover:border-luxury-gold transition-colors duration-700">
+          <img 
+            src={image} 
+            alt={author} 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+        <div>
+          <h4 className="text-lg font-serif text-[var(--text-primary)] tracking-tight">{author}</h4>
+          <p className="text-luxury-gold text-[10px] uppercase tracking-[0.3em] font-bold">{role}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const Testimonials = () => {
+  const testimonials = [
+    {
+      quote: "Investing in Ramky's Brindavanam was one of the best decisions for our family's future. The scale of the project and the strategic location in the Future City are unmatched.",
+      author: "Dr. Arvind Kumar",
+      role: "Senior Surgeon",
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop"
+    },
+    {
+      quote: "The attention to detail in the infrastructure, especially the underground cabling and the wide roads, shows Ramky's commitment to delivering truly world-class living.",
+      author: "Priya Sharma",
+      role: "Tech Entrepreneur",
+      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1974&auto=format&fit=crop"
+    },
+    {
+      quote: "A rare combination of spiritual serenity with the Goshala and modern luxury with the clubhouse. It's exactly the kind of legacy we wanted to build for our children.",
+      author: "Rajesh Reddy",
+      role: "Industrialist",
+      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1974&auto=format&fit=crop"
+    }
+  ];
+
+  return (
+    <section className="py-24 md:py-32 bg-[var(--bg-secondary)] relative overflow-hidden">
+      {/* Background accents */}
+      <div className="absolute top-0 right-0 w-1/3 h-full bg-luxury-gold/5 blur-[150px] -z-0"></div>
+      <div className="absolute bottom-0 left-0 w-1/4 h-1/2 bg-luxury-gold/5 blur-[150px] -z-0"></div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <SectionHeading title="Voices of Trust" subtitle="Client Testimonials" />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {testimonials.map((t, i) => (
+            <TestimonialCard key={i} {...t} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const FounderSection = () => {
+  return (
+    <section className="bg-[var(--bg-primary)] py-24 md:py-32">
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <Reveal delay={0.2}>
+            <div className="relative aspect-[4/5] rounded-sm overflow-hidden group shadow-2xl order-first lg:order-last">
+              <img 
+                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop" 
+                alt="Founder" 
+                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              <div className="absolute bottom-10 left-10 opacity-0 group-hover:opacity-100 transition-all duration-700 translate-y-4 group-hover:translate-y-0">
+                <p className="text-luxury-gold font-serif text-2xl italic">"Building legacies, not just structures."</p>
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal>
+            <div className="glass-card p-10 md:p-16 rounded-sm border-[var(--border-color)] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-luxury-gold/5 blur-3xl -z-0 group-hover:bg-luxury-gold/10 transition-colors duration-700"></div>
+              <span className="text-luxury-gold text-[10px] uppercase tracking-[0.6em] font-bold mb-6 block">The Visionary</span>
+              <h2 className="text-4xl md:text-5xl font-serif mb-8 text-[var(--text-primary)] leading-tight">Founder – <span className="italic text-luxury-gold">Ramky</span></h2>
+              <p className="text-[var(--text-secondary)] text-lg font-light leading-relaxed mb-10">
+                With over three decades of excellence in infrastructure and real estate, our founder's vision has always been about creating sustainable, luxury ecosystems that stand the test of time. Ramky's Brindavanam is the culmination of this lifelong commitment to quality and innovation.
+              </p>
+              <a 
+                href="/founder-profile.pdf" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-3 text-luxury-gold hover:text-[var(--text-primary)] transition-colors group/link"
+              >
+                <span className="text-xs uppercase tracking-[0.4em] font-bold">Read More</span>
+                <ExternalLink size={16} className="group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-transform" />
+              </a>
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// --- Project Roadmap Component ---
+const ProjectRoadmap = () => {
+  const milestones = [
+    {
+      year: "2023",
+      title: "Vision & Acquisition",
+      description: "Strategic acquisition of 100 acres in the heart of the Future City growth corridor.",
+      status: "completed",
+      icon: <Target className="w-6 h-6" />
+    },
+    {
+      year: "2024",
+      title: "Master Planning",
+      description: "Collaboration with global urban designers to create a sustainable, luxury ecosystem.",
+      status: "completed",
+      icon: <Layers className="w-6 h-6" />
+    },
+    {
+      year: "2025",
+      title: "Infrastructure Launch",
+      description: "Commencement of 60ft & 40ft internal roads, drainage, and underground cabling.",
+      status: "current",
+      icon: <Activity className="w-6 h-6" />
+    },
+    {
+      year: "2026",
+      title: "Amenity Development",
+      description: "Grand Clubhouse construction and themed park landscaping in full swing.",
+      status: "upcoming",
+      icon: <Zap className="w-6 h-6" />
+    },
+    {
+      year: "2027",
+      title: "The Grand Handover",
+      description: "Completion of the 100-acre masterpiece and welcoming the first residents.",
+      status: "upcoming",
+      icon: <Rocket className="w-6 h-6" />
+    }
+  ];
+
+  return (
+    <section className="py-20 bg-[var(--bg-primary)] relative overflow-hidden">
+      {/* Decorative Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-luxury-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-luxury-gold/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+      <div className="absolute inset-0 bg-dots-pattern opacity-20" />
+
+      <div className="container mx-auto px-6 relative z-10">
+        <SectionHeading title="Project Roadmap" subtitle="The Journey to Excellence" />
+        
+        <div className="relative mt-20">
+          {/* Vertical Line */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-px bg-luxury-gold/20 hidden md:block" />
+          
+          <div className="space-y-24">
+            {milestones.map((m, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: i * 0.1 }}
+                className={`flex flex-col md:flex-row items-center ${i % 2 === 0 ? 'md:flex-row-reverse' : ''}`}
+              >
+                {/* Content */}
+                <div className="w-full md:w-1/2 px-6 md:px-12 text-center md:text-left">
+                  <div className={`${i % 2 === 0 ? 'md:text-left' : 'md:text-right'}`}>
+                    <span className="text-luxury-gold font-mono text-sm tracking-[0.3em] mb-2 block">{m.year}</span>
+                    <h3 className="text-2xl font-serif text-[var(--text-primary)] mb-4">{m.title}</h3>
+                    <p className="text-[var(--text-secondary)] font-light leading-relaxed max-w-md mx-auto md:mx-0">
+                      {m.description}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Icon Circle */}
+                <div className="relative z-10 flex items-center justify-center w-16 h-16 rounded-full bg-[var(--bg-secondary)] border border-luxury-gold/30 my-8 md:my-0 shadow-2xl shadow-luxury-gold/10">
+                  <div className={`text-luxury-gold ${m.status === 'current' ? 'animate-pulse' : ''}`}>
+                    {m.icon}
+                  </div>
+                  {m.status === 'current' && (
+                    <div className="absolute -inset-2 border border-luxury-gold/20 rounded-full animate-ping" />
+                  )}
+                </div>
+
+                {/* Spacer for the other side */}
+                <div className="hidden md:block w-1/2" />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// --- Onsite Progress Gallery ---
+const OnsiteProgress = () => {
+  const images = [
+    {
+      url: "https://images.unsplash.com/photo-1541888946425-d81bb19480c5?auto=format&fit=crop&q=80&w=800",
+      title: "Main Entrance Arch",
+      category: "Infrastructure"
+    },
+    {
+      url: "https://images.unsplash.com/photo-1503387762-592dee58c160?auto=format&fit=crop&q=80&w=800",
+      title: "Internal Road Network",
+      category: "Roads"
+    },
+    {
+      url: "https://images.unsplash.com/photo-1590644365607-1c5a519a9a37?auto=format&fit=crop&q=80&w=800",
+      title: "Clubhouse Foundation",
+      category: "Amenities"
+    },
+    {
+      url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800",
+      title: "Landscaping Phase 1",
+      category: "Parks"
+    }
+  ];
+
+  return (
+    <section className="py-20 bg-[var(--bg-secondary)]">
+      <div className="container mx-auto px-6">
+        <SectionHeading title="Onsite Progress" subtitle="Witness the Transformation" />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+          {images.map((img, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
+              className="group relative h-[400px] overflow-hidden rounded-sm cursor-pointer"
+            >
+              <img 
+                src={img.url} 
+                alt={img.title}
+                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-luxury-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
+                <span className="text-luxury-gold text-[10px] uppercase tracking-[0.3em] mb-2">{img.category}</span>
+                <h4 className="text-white text-xl font-serif">{img.title}</h4>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// --- Full Width Map Component ---
+const FullWidthMap = () => {
+  return (
+    <section className="w-full h-[500px] relative bg-[var(--bg-primary)] overflow-hidden">
+      <div className="absolute inset-0 grayscale opacity-50 hover:grayscale-0 transition-all duration-1000">
+        <iframe 
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3814.789123456789!2d78.456789!3d17.123456!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTfCsDA3JzI0LjQiTiA3OMKwMjcnMjQuNCJF!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin" 
+          width="100%" 
+          height="100%" 
+          style={{ border: 0 }} 
+          allowFullScreen 
+          loading="lazy"
+          title="Project Location"
+        ></iframe>
+      </div>
+      
+      {/* Map Overlay Card */}
+      <div className="absolute top-1/2 left-10 transform -translate-y-1/2 z-10 hidden md:block">
+        <motion.div 
+          initial={{ x: -100, opacity: 0 }}
+          whileInView={{ x: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          className="glass-card p-10 max-w-sm border-luxury-gold/20"
+        >
+          <h3 className="text-2xl font-serif text-luxury-gold mb-4">Prime Location</h3>
+          <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
+            Strategically located in Mucherla, the heart of the 4th Future City. Just 20 minutes from the International Airport.
+          </p>
+          <div className="flex items-center gap-4 text-xs text-luxury-gold uppercase tracking-widest">
+            <MapPin size={16} />
+            <span>Mucherla, Hyderabad</span>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
 // --- Page Content ---
 
@@ -576,38 +1784,33 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
       <Hero onCtaClick={() => setActivePage('contact')} />
 
       {/* Prestige Statement */}
-      <section className="py-48 md:py-64 bg-luxury-black relative overflow-hidden">
+      <section className="py-16 md:py-20 bg-[var(--bg-primary)] relative overflow-hidden">
+        {/* Decorative Grid */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
+        
         <div className="container mx-auto px-6 text-center relative z-10">
           <Reveal>
-            <h2 className="text-5xl md:text-8xl font-serif mb-16 leading-[1.1] max-w-6xl mx-auto tracking-tight">
+            <div className="flex justify-center mb-8">
+              <div className="w-12 h-px bg-luxury-gold/40" />
+              <div className="mx-4 text-luxury-gold"><Award size={20} /></div>
+              <div className="w-12 h-px bg-luxury-gold/40" />
+            </div>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-serif mb-6 leading-[1.2] max-w-4xl mx-auto tracking-tight text-[var(--text-primary)]">
               “Crafted for the <span className="italic text-luxury-gold">future</span>. <br />
               Designed for <span className="italic text-luxury-gold">legacy</span>.”
             </h2>
-            <p className="text-luxury-offwhite/50 text-xl md:text-2xl max-w-4xl mx-auto font-light leading-relaxed tracking-wide">
+            <p className="text-[var(--text-secondary)] text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
               Ramky’s Brindavanam is more than a development; it's a testament to timeless luxury and strategic foresight in the heart of the world's next great metropolis.
             </p>
           </Reveal>
         </div>
-        {/* Decorative elements */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
-          <motion.div 
-            animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.1, 0.05] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] border border-luxury-gold rounded-full"
-          ></motion.div>
-          <motion.div 
-            animate={{ scale: [1.1, 1, 1.1], opacity: [0.05, 0.08, 0.05] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] border border-luxury-gold rounded-full"
-          ></motion.div>
-        </div>
       </section>
 
       {/* Project Snapshot */}
-      <section className="py-40 bg-luxury-gray/20">
+      <section className="py-16 md:py-20 bg-[var(--bg-secondary)]">
         <div className="container mx-auto px-6">
           <SectionHeading title="Project Snapshot" subtitle="At a Glance" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             <SnapshotCard 
               icon={Trees} 
               title="Expansive Living" 
@@ -630,66 +1833,23 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
         </div>
       </section>
 
-      {/* Why Invest */}
-      <section className="py-48 bg-luxury-black">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-32">
-            <div className="lg:w-1/2">
-              <Reveal>
-                <span className="text-luxury-gold text-xs uppercase tracking-[0.5em] font-bold mb-6 block">Future City Advantage</span>
-                <h2 className="text-5xl md:text-7xl font-serif mb-10 leading-tight tracking-tight">
-                  The Epicenter of <br />
-                  <span className="italic text-luxury-gold">Global Growth</span>
-                </h2>
-                <p className="text-luxury-offwhite/60 text-xl mb-12 leading-relaxed font-light">
-                  Mucherla is evolving into the 4th Future City, a hub of innovation and luxury. Investing here means being at the doorstep of tomorrow's landmarks.
-                </p>
-                <ul className="space-y-8 mb-16">
-                  {[
-                    { icon: Building2, text: "Proximity to AI City & World Trade Center" },
-                    { icon: Shield, text: "Near Health City & International Education Hubs" },
-                    { icon: Route, text: "Seamless connectivity to the Outer Ring Road" }
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center space-x-6 group">
-                      <div className="w-12 h-12 rounded-full bg-luxury-gold/5 flex items-center justify-center text-luxury-gold group-hover:bg-luxury-gold group-hover:text-luxury-black transition-all duration-500">
-                        <item.icon size={22} />
-                      </div>
-                      <span className="text-luxury-offwhite/80 text-lg font-light tracking-wide">{item.text}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button 
-                  onClick={() => setActivePage('project')}
-                  className="px-10 py-5 border border-luxury-gold text-luxury-gold text-xs uppercase tracking-[0.3em] font-bold hover:bg-luxury-gold hover:text-luxury-black transition-all duration-700"
-                >
-                  Explore Investment Potential
-                </button>
-              </Reveal>
-            </div>
-            <div className="lg:w-1/2 relative">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="relative z-10 rounded-sm overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]"
-              >
-                <img 
-                  src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=2070&auto=format&fit=crop" 
-                  alt="Future City Drone Sunset" 
-                  className="w-full aspect-[4/5] object-cover hover:scale-105 transition-transform duration-[2s]"
-                  referrerPolicy="no-referrer"
-                />
-              </motion.div>
-              <div className="absolute -top-12 -left-12 w-80 h-80 border border-luxury-gold/10 -z-0 hidden md:block"></div>
-              <div className="absolute -bottom-12 -right-12 w-80 h-80 border border-luxury-gold/10 -z-0 hidden md:block"></div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Founder Section */}
+      <FounderSection />
+
+      {/* Project Roadmap Section */}
+      <ProjectRoadmap />
+
+      {/* Future City Vision */}
+      <FutureCityVision />
+
+      {/* Onsite Progress Section */}
+      <OnsiteProgress />
+
+      {/* Master Plan Section */}
+      <MasterPlanSection />
 
       {/* Signature Amenities */}
-      <section className="py-48 bg-luxury-gray/5">
+      <section className="py-20 bg-luxury-gray/5">
         <div className="container mx-auto px-6">
           <SectionHeading title="Signature Amenities" subtitle="Luxury Redefined" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -717,8 +1877,32 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-20 bg-[var(--bg-primary)]">
+        <div className="container mx-auto px-6">
+          <SectionHeading title="Voices of Trust" subtitle="Client Testimonials" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <TestimonialCard 
+              quote="Investing in Ramky Brindavanam was the best decision for our family's future. The vision for the Future City is truly inspiring."
+              author="Dr. Arvind Kumar"
+              role="Senior Surgeon"
+              image="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop"
+            />
+            <TestimonialCard 
+              quote="The attention to detail in the master plan and the commitment to green spaces is what sets this project apart from everything else."
+              author="Sarah D'Souza"
+              role="Urban Architect"
+              image="https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?q=80&w=2070&auto=format&fit=crop"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Full Width Map Section */}
+      <FullWidthMap />
+
       {/* Final CTA */}
-      <section className="py-64 bg-luxury-black relative overflow-hidden">
+      <section className="py-20 md:py-24 bg-[var(--bg-primary)] relative overflow-hidden">
         <div className="absolute inset-0 opacity-40">
           <img 
             src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop" 
@@ -726,17 +1910,17 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-luxury-black via-luxury-black/60 to-luxury-black/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)] via-[var(--bg-primary)]/60 to-[var(--bg-primary)]/40"></div>
         </div>
         <div className="container mx-auto px-6 relative z-10 text-center">
           <Reveal>
-            <h2 className="text-5xl md:text-9xl font-serif mb-12 text-luxury-offwhite tracking-tighter">Own Your Future Today</h2>
-            <p className="text-luxury-offwhite/50 text-xl md:text-2xl mb-16 max-w-3xl mx-auto font-light leading-relaxed">
+            <h2 className="text-4xl md:text-6xl lg:text-7xl font-serif mb-10 text-[var(--text-primary)] tracking-tight leading-tight">Own Your Future Today</h2>
+            <p className="text-[var(--text-secondary)] text-lg md:text-xl mb-12 max-w-2xl mx-auto font-light leading-relaxed">
               Limited premium plots available in the most sought-after growth zone. Secure your legacy at Ramky’s Brindavanam.
             </p>
             <button 
               onClick={() => setActivePage('contact')}
-              className="px-16 py-8 bg-luxury-gold text-luxury-black text-sm uppercase tracking-[0.4em] font-bold hover:bg-luxury-offwhite transition-all duration-700 rounded-sm shadow-2xl shadow-luxury-gold/30"
+              className="px-12 py-6 bg-luxury-gold text-[var(--bg-primary)] text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm shadow-2xl shadow-luxury-gold/30"
             >
               Request Pricing & Brochure
             </button>
@@ -748,75 +1932,59 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
 };
 
 const ProjectPage = () => {
-  return (
-    <main className="pt-48">
-      <section className="container mx-auto px-6 mb-48">
-        <SectionHeading title="The Masterpiece" subtitle="Project Details" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
-          <Reveal>
-            <h3 className="text-4xl md:text-6xl font-serif mb-10 text-luxury-gold tracking-tight">Grand Entrance Concept</h3>
-            <p className="text-luxury-offwhite/60 text-xl leading-relaxed mb-12 font-light">
-              The entrance to Ramky’s Brindavanam is designed to be a landmark in itself. A majestic gateway that signifies your arrival into a world of curated luxury and absolute security.
-            </p>
-            <div className="space-y-8">
-              {[
-                "DTCP Approved Layout",
-                "RERA Registered Project",
-                "IGBC Green Certified Development",
-                "100% Vaastu Compliant Plots"
-              ].map((item, i) => (
-                <div key={i} className="flex items-center space-x-6 group">
-                  <CheckCircle2 className="text-luxury-gold group-hover:scale-110 transition-transform" size={28} />
-                  <span className="text-luxury-offwhite text-lg font-light tracking-widest uppercase">{item}</span>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-          <motion.div 
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-sm overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-white/5"
-          >
-            <img 
-              src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop" 
-              alt="Entrance" 
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-[3s]"
-              referrerPolicy="no-referrer"
-            />
-          </motion.div>
-        </div>
-      </section>
+  const categories = [
+    {
+      title: "The Grand Entrance",
+      desc: "A majestic gateway that reflects the stature of its residents.",
+      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop"
+    },
+    {
+      title: "Elite Clubhouse",
+      desc: "A 50,000 sq.ft. sanctuary of leisure and social connection.",
+      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop"
+    },
+    {
+      title: "Themed Parks",
+      desc: "Lush landscapes designed for serenity and active living.",
+      image: "https://images.unsplash.com/photo-1600607687940-467f5b637a53?q=80&w=2070&auto=format&fit=crop"
+    }
+  ];
 
-      <section className="bg-luxury-gray/10 py-48">
+  return (
+    <main className="bg-[var(--bg-primary)]">
+      {/* Experience Your Space - Immersive Card Layout */}
+      <section className="pt-32 pb-24 md:pt-48 md:pb-32 overflow-hidden">
         <div className="container mx-auto px-6">
-          <Reveal>
-            <div className="text-center mb-32">
-              <h3 className="text-5xl md:text-7xl font-serif mb-8 tracking-tight">Infrastructure Highlights</h3>
-              <p className="text-luxury-offwhite/50 text-xl max-w-3xl mx-auto font-light leading-relaxed">Built with precision, our underground infrastructure ensures a clutter-free and premium living environment for the elite.</p>
-            </div>
-          </Reveal>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
-            {[
-              { title: "Underground Cabling", desc: "No overhead wires, ensuring clear views and absolute safety." },
-              { title: "Storm Water Drains", desc: "Advanced drainage system for a flood-free, sustainable layout." },
-              { title: "24/7 Security", desc: "Gated community with AI-powered CCTV and professional guards." },
-              { title: "Water Supply", desc: "Dedicated overhead tanks for uninterrupted, pure supply." }
-            ].map((item, i) => (
-              <motion.div 
-                key={i} 
-                initial={{ opacity: 0, y: 20 }}
+          <SectionHeading title="Experience Your Space" subtitle="Immersive Living" />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {categories.map((cat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center group"
+                transition={{ duration: 1, delay: i * 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="group relative aspect-[3/4] overflow-hidden rounded-sm cursor-pointer"
               >
-                <div className="w-16 h-16 bg-luxury-gold/5 rounded-full flex items-center justify-center text-luxury-gold mx-auto mb-10 group-hover:bg-luxury-gold group-hover:text-luxury-black transition-all duration-700">
-                  <Award size={32} />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)] via-[var(--bg-primary)]/20 to-transparent z-10 opacity-60 group-hover:opacity-80 transition-opacity duration-700"></div>
+                <img 
+                  src={cat.image} 
+                  alt={cat.title} 
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 border border-[var(--border-color)] group-hover:border-luxury-gold/30 transition-all duration-700 z-20"></div>
+                
+                <div className="absolute bottom-0 left-0 w-full p-10 z-30 transform translate-y-8 group-hover:translate-y-0 transition-transform duration-700">
+                  <h4 className="text-3xl font-serif text-[var(--text-primary)] mb-3 tracking-tight">{cat.title}</h4>
+                  <p className="text-[var(--text-secondary)] text-base font-light mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">
+                    {cat.desc}
+                  </p>
+                  <button className="px-6 py-3 bg-luxury-gold text-luxury-black text-[8px] uppercase tracking-widest font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-500 rounded-sm">
+                    Explore Details
+                  </button>
                 </div>
-                <h4 className="text-2xl font-serif mb-4 tracking-tight">{item.title}</h4>
-                <p className="text-base text-luxury-offwhite/40 leading-relaxed font-light">{item.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -824,44 +1992,16 @@ const ProjectPage = () => {
       </section>
 
       <InteractiveFloorPlan />
-
-      <section className="py-48 container mx-auto px-6">
-        <Reveal>
-          <div className="glass-card p-16 md:p-32 rounded-sm relative overflow-hidden shadow-2xl">
-            <div className="relative z-10">
-              <span className="text-luxury-gold text-xs uppercase tracking-[0.6em] font-bold mb-8 block">The Future City Vision</span>
-              <h3 className="text-5xl md:text-8xl font-serif mb-16 tracking-tight">Unprecedented Growth</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
-                {[
-                  { title: "AI City", desc: "The upcoming global hub for artificial intelligence and tech innovation." },
-                  { title: "World Trade Center", desc: "A massive commercial landmark driving business and value." },
-                  { title: "Health City", desc: "World-class medical facilities and wellness centers nearby." },
-                  { title: "Education Hub", desc: "Top-tier international schools and universities in the vicinity." }
-                ].map((item, i) => (
-                  <div key={i} className="border-l border-luxury-gold/20 pl-10 group hover:border-luxury-gold transition-colors duration-700">
-                    <h4 className="text-3xl font-serif mb-4 text-luxury-gold group-hover:translate-x-2 transition-transform duration-500">{item.title}</h4>
-                    <p className="text-luxury-offwhite/50 text-lg leading-relaxed font-light">{item.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Background decorative text */}
-            <div className="absolute -bottom-20 -right-20 text-[25rem] font-serif font-bold text-white/[0.02] pointer-events-none select-none">
-              2026
-            </div>
-          </div>
-        </Reveal>
-      </section>
     </main>
   );
 };
 
 const AboutPage = () => {
   return (
-    <main className="pt-48">
-      <section className="container mx-auto px-6 mb-48">
+    <main className="pt-32 md:pt-48 bg-[var(--bg-primary)]">
+      <section className="container mx-auto px-6 mb-24 md:mb-32">
         <SectionHeading title="Legacy of Trust" subtitle="About Ramky Infra" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-32 items-center">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -877,54 +2017,37 @@ const AboutPage = () => {
             />
           </motion.div>
           <Reveal>
-            <h3 className="text-4xl md:text-6xl font-serif mb-10 text-luxury-gold tracking-tight">Building the Future Since 1994</h3>
-            <p className="text-luxury-offwhite/60 text-xl leading-relaxed mb-10 font-light">
+            <h3 className="text-3xl md:text-5xl font-serif mb-8 text-luxury-gold tracking-tight">Building the Future Since 1994</h3>
+            <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-8 font-light">
               Ramky Infra is a leading infrastructure development and management company in India. With a focus on sustainable growth and excellence, we have delivered landmark projects across sectors.
             </p>
-            <p className="text-luxury-offwhite/60 text-xl leading-relaxed mb-12 font-light">
+            <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-10 font-light">
               Ramky’s Brindavanam is our latest vision for premium living—a perfect blend of nature, modern infrastructure, and strategic location in the heart of the Future City.
             </p>
-            <div className="grid grid-cols-2 gap-12">
+            <div className="grid grid-cols-2 gap-10">
               <div>
-                <h4 className="text-5xl font-serif text-luxury-gold mb-2 tracking-tighter">30+</h4>
-                <p className="text-luxury-offwhite/40 uppercase tracking-[0.3em] text-xs font-bold">Years of Excellence</p>
+                <h4 className="text-4xl font-serif text-luxury-gold mb-2 tracking-tighter">30+</h4>
+                <p className="text-[var(--text-secondary)] uppercase tracking-[0.3em] text-[10px] font-bold opacity-40">Years of Excellence</p>
               </div>
               <div>
-                <h4 className="text-5xl font-serif text-luxury-gold mb-2 tracking-tighter">180+</h4>
-                <p className="text-luxury-offwhite/40 uppercase tracking-[0.3em] text-xs font-bold">Projects Delivered</p>
+                <h4 className="text-4xl font-serif text-luxury-gold mb-2 tracking-tighter">180+</h4>
+                <p className="text-[var(--text-secondary)] uppercase tracking-[0.3em] text-[10px] font-bold opacity-40">Projects Delivered</p>
               </div>
             </div>
           </Reveal>
         </div>
       </section>
 
-      <section className="bg-luxury-gray/5 py-48">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-32">
-            <Reveal>
-              <h4 className="text-4xl font-serif mb-8 text-luxury-gold tracking-tight">Our Vision</h4>
-              <p className="text-luxury-offwhite/50 text-xl leading-relaxed font-light">
-                To be the most trusted name in infrastructure and real estate, creating value for our customers through innovation, quality, and sustainable practices.
-              </p>
-            </Reveal>
-            <Reveal>
-              <h4 className="text-4xl font-serif mb-8 text-luxury-gold tracking-tight">Our Mission</h4>
-              <p className="text-luxury-offwhite/50 text-xl leading-relaxed font-light">
-                To deliver world-class projects that enhance the quality of life, while maintaining the highest standards of integrity and environmental responsibility.
-              </p>
-            </Reveal>
-          </div>
-        </div>
-      </section>
+      <VisionMissionSection />
 
-      <section className="py-48 container mx-auto px-6">
+      <section className="py-24 md:py-32 container mx-auto px-6">
         <Reveal>
-          <div className="text-center mb-32">
-            <h3 className="text-5xl md:text-7xl font-serif mb-8 tracking-tight">Trusted Partners</h3>
-            <p className="text-luxury-offwhite/40 text-xl max-w-2xl mx-auto font-light">Collaborating with global leaders to ensure the highest standards of quality and design.</p>
+          <div className="text-center mb-24">
+            <h3 className="text-4xl md:text-6xl font-serif mb-6 tracking-tight text-[var(--text-primary)]">Trusted Partners</h3>
+            <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto font-light">Collaborating with global leaders to ensure the highest standards of quality and design.</p>
           </div>
         </Reveal>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-16 items-center opacity-30">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-16 items-center opacity-30">
           {[1, 2, 3, 4].map((i) => (
             <motion.div 
               key={i} 
@@ -932,8 +2055,8 @@ const AboutPage = () => {
               className="flex justify-center grayscale hover:grayscale-0 transition-all duration-700"
             >
               <div className="flex items-center space-x-4">
-                <Building2 className="text-luxury-gold" size={48} />
-                <div className="text-3xl font-serif text-luxury-offwhite tracking-widest uppercase">Partner {i}</div>
+                <Building2 className="text-luxury-gold" size={32} />
+                <div className="text-xl md:text-2xl font-serif text-[var(--text-primary)] tracking-widest uppercase">Partner {i}</div>
               </div>
             </motion.div>
           ))}
@@ -954,10 +2077,10 @@ const GalleryPage = () => {
   ];
 
   return (
-    <main className="pt-48 pb-48">
+    <main className="pt-32 md:pt-48 pb-24 md:pb-32 bg-[var(--bg-primary)]">
       <div className="container mx-auto px-6">
         <SectionHeading title="Visual Journey" subtitle="Gallery" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
           {images.map((img, i) => (
             <motion.div
               key={i}
@@ -973,10 +2096,10 @@ const GalleryPage = () => {
                 className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110 group-hover:blur-[2px]"
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute inset-0 bg-luxury-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-700 flex items-center justify-center backdrop-blur-[2px]">
+              <div className="absolute inset-0 bg-[var(--bg-primary)]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-700 flex items-center justify-center backdrop-blur-[2px]">
                 <div className="text-center transform scale-50 group-hover:scale-100 transition-transform duration-700">
-                  <span className="text-luxury-gold text-xs uppercase tracking-[0.6em] font-bold mb-4 block">{img.cat}</span>
-                  <h4 className="text-3xl font-serif text-luxury-offwhite tracking-tight">View Detail</h4>
+                  <span className="text-luxury-gold text-[10px] uppercase tracking-[0.6em] font-bold mb-3 block">{img.cat}</span>
+                  <h4 className="text-2xl font-serif text-[var(--text-primary)] tracking-tight">View Detail</h4>
                 </div>
               </div>
             </motion.div>
@@ -989,45 +2112,45 @@ const GalleryPage = () => {
 
 const ContactPage = () => {
   return (
-    <main className="pt-48 pb-48">
+    <main className="pt-32 md:pt-48 pb-24 md:pb-32 bg-[var(--bg-primary)]">
       <div className="container mx-auto px-6">
         <SectionHeading title="Book Your Site Visit" subtitle="Get in Touch" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-32">
           <Reveal>
-            <h3 className="text-4xl md:text-6xl font-serif mb-12 text-luxury-gold tracking-tight">Let's Discuss Your Future Address</h3>
-            <p className="text-luxury-offwhite/60 text-xl mb-16 leading-relaxed font-light">
+            <h3 className="text-3xl md:text-5xl font-serif mb-8 text-luxury-gold tracking-tight">Let's Discuss Your Future Address</h3>
+            <p className="text-[var(--text-secondary)] text-lg mb-10 leading-relaxed font-light">
               Our investment consultants are ready to guide you through the most promising real estate opportunity in the Future City.
             </p>
-            <div className="space-y-12 mb-16">
-              <div className="flex items-start space-x-8 group">
-                <div className="w-14 h-14 bg-luxury-gold/10 rounded-full flex items-center justify-center text-luxury-gold shrink-0 group-hover:bg-luxury-gold group-hover:text-luxury-black transition-all duration-700">
-                  <MapPin size={28} />
+            <div className="space-y-8 mb-10">
+              <div className="flex items-start space-x-6 group">
+                <div className="w-12 h-12 bg-luxury-gold/10 rounded-full flex items-center justify-center text-luxury-gold shrink-0 group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700">
+                  <MapPin size={24} />
                 </div>
                 <div>
-                  <h4 className="text-xl font-serif mb-2 tracking-tight">Corporate Office</h4>
-                  <p className="text-luxury-offwhite/50 text-lg font-light">Ramky Towers, Gachibowli, Hyderabad, 500032</p>
+                  <h4 className="text-lg font-serif mb-1 tracking-tight text-[var(--text-primary)]">Corporate Office</h4>
+                  <p className="text-[var(--text-secondary)] text-base font-light">Ramky Towers, Gachibowli, Hyderabad, 500032</p>
                 </div>
               </div>
-              <div className="flex items-start space-x-8 group">
-                <div className="w-14 h-14 bg-luxury-gold/10 rounded-full flex items-center justify-center text-luxury-gold shrink-0 group-hover:bg-luxury-gold group-hover:text-luxury-black transition-all duration-700">
-                  <Phone size={28} />
+              <div className="flex items-start space-x-6 group">
+                <div className="w-12 h-12 bg-luxury-gold/10 rounded-full flex items-center justify-center text-luxury-gold shrink-0 group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700">
+                  <Phone size={24} />
                 </div>
                 <div>
-                  <h4 className="text-xl font-serif mb-2 tracking-tight">Direct Line</h4>
-                  <p className="text-luxury-offwhite/50 text-lg font-light">+91 98765 43210</p>
+                  <h4 className="text-lg font-serif mb-1 tracking-tight text-[var(--text-primary)]">Direct Line</h4>
+                  <p className="text-[var(--text-secondary)] text-base font-light">+91 98765 43210</p>
                 </div>
               </div>
-              <div className="flex items-start space-x-8 group">
-                <div className="w-14 h-14 bg-luxury-gold/10 rounded-full flex items-center justify-center text-luxury-gold shrink-0 group-hover:bg-luxury-gold group-hover:text-luxury-black transition-all duration-700">
-                  <Mail size={28} />
+              <div className="flex items-start space-x-6 group">
+                <div className="w-12 h-12 bg-luxury-gold/10 rounded-full flex items-center justify-center text-luxury-gold shrink-0 group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700">
+                  <Mail size={24} />
                 </div>
                 <div>
-                  <h4 className="text-xl font-serif mb-2 tracking-tight">Email Us</h4>
-                  <p className="text-luxury-offwhite/50 text-lg font-light">sales@ramkyinfra.com</p>
+                  <h4 className="text-lg font-serif mb-1 tracking-tight text-[var(--text-primary)]">Email Us</h4>
+                  <p className="text-[var(--text-secondary)] text-base font-light">sales@ramkyinfra.com</p>
                 </div>
               </div>
             </div>
-            <div className="h-96 w-full rounded-sm overflow-hidden grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-1000 shadow-2xl border border-white/5">
+            <div className="h-80 w-full rounded-sm overflow-hidden grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-1000 shadow-2xl border border-[var(--border-color)]">
               <iframe 
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.827222661234!2d78.306447314877!3d17.420042988059!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb93f1f1f1f1f1%3A0x1f1f1f1f1f1f1f1f!2sHyderabad%2C%20Telangana!5e0!3m2!1sen!2sin!4v1625123456789!5m2!1sen!2sin" 
                 width="100%" 
@@ -1045,29 +2168,29 @@ const ContactPage = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-card p-12 md:p-20 rounded-sm shadow-2xl border border-white/5"
+            className="glass-card p-10 md:p-16 rounded-sm shadow-2xl border border-[var(--border-color)]"
           >
-            <h4 className="text-3xl font-serif mb-12 tracking-tight">Inquiry Form</h4>
-            <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-4">
-                  <label className="text-xs uppercase tracking-[0.4em] text-luxury-gold font-bold">Full Name</label>
-                  <input type="text" placeholder="John Doe" className="w-full bg-transparent border-b border-white/10 py-4 focus:border-luxury-gold outline-none transition-colors text-luxury-offwhite text-lg font-light" />
+            <h4 className="text-2xl md:text-3xl font-serif mb-10 tracking-tight text-[var(--text-primary)]">Inquiry Form</h4>
+            <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold">Full Name</label>
+                  <input type="text" placeholder="John Doe" className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light" />
                 </div>
-                <div className="space-y-4">
-                  <label className="text-xs uppercase tracking-[0.4em] text-luxury-gold font-bold">Phone Number</label>
-                  <input type="tel" placeholder="+91 00000 00000" className="w-full bg-transparent border-b border-white/10 py-4 focus:border-luxury-gold outline-none transition-colors text-luxury-offwhite text-lg font-light" />
+                <div className="space-y-3">
+                  <label className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold">Phone Number</label>
+                  <input type="tel" placeholder="+91 00000 00000" className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light" />
                 </div>
               </div>
-              <div className="space-y-4">
-                <label className="text-xs uppercase tracking-[0.4em] text-luxury-gold font-bold">Email Address</label>
-                <input type="email" placeholder="john@example.com" className="w-full bg-transparent border-b border-white/10 py-4 focus:border-luxury-gold outline-none transition-colors text-luxury-offwhite text-lg font-light" />
+              <div className="space-y-3">
+                <label className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold">Email Address</label>
+                <input type="email" placeholder="john@example.com" className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light" />
               </div>
-              <div className="space-y-4">
-                <label className="text-xs uppercase tracking-[0.4em] text-luxury-gold font-bold">Message</label>
-                <textarea rows={4} placeholder="I'm interested in..." className="w-full bg-transparent border-b border-white/10 py-4 focus:border-luxury-gold outline-none transition-colors text-luxury-offwhite resize-none text-lg font-light"></textarea>
+              <div className="space-y-3">
+                <label className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold">Message</label>
+                <textarea rows={3} placeholder="I'm interested in..." className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] resize-none text-base font-light"></textarea>
               </div>
-              <button className="w-full py-8 bg-luxury-gold text-luxury-black text-sm uppercase tracking-[0.4em] font-bold hover:bg-luxury-offwhite transition-all duration-700 rounded-sm shadow-xl shadow-luxury-gold/20">
+              <button className="w-full py-6 bg-luxury-gold text-luxury-black text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm shadow-xl shadow-luxury-gold/20">
                 Book Site Visit Now
               </button>
             </form>
@@ -1079,35 +2202,142 @@ const ContactPage = () => {
 };
 
 const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
+  const { theme } = useTheme();
+  
   return (
-    <footer className="bg-luxury-black pt-32 pb-16 border-t border-white/5">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-20 mb-32">
-          <div className="col-span-1 lg:col-span-1">
-            <div className="flex items-center space-x-3 mb-10">
-              <div className="w-10 h-10 bg-luxury-gold flex items-center justify-center rounded-sm">
-                <span className="text-luxury-black font-serif font-bold text-xl">R</span>
+    <footer className="bg-[var(--bg-primary)] pt-24 pb-12 border-t border-[var(--border-color)] relative overflow-hidden">
+      {/* Advanced City Skyline Silhouette */}
+      <div className="absolute bottom-0 left-0 w-full h-64 pointer-events-none z-0">
+        <div className="relative w-full h-full overflow-hidden">
+          {/* Layer 1: Background (Slowest) */}
+          <motion.div 
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-0 left-0 flex items-end opacity-5 dark:opacity-10"
+          >
+            {[...Array(20)].map((_, i) => (
+              <div 
+                key={i} 
+                className="w-32 bg-luxury-gold shrink-0 rounded-t-lg mx-1"
+                style={{ height: `${Math.random() * 100 + 100}px` }}
+              />
+            ))}
+            {[...Array(20)].map((_, i) => (
+              <div 
+                key={i + 20} 
+                className="w-32 bg-luxury-gold shrink-0 rounded-t-lg mx-1"
+                style={{ height: `${Math.random() * 100 + 100}px` }}
+              />
+            ))}
+          </motion.div>
+
+          {/* Layer 2: Mid (Medium) */}
+          <motion.div 
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-0 left-0 flex items-end opacity-10 dark:opacity-20"
+          >
+            {[...Array(30)].map((_, i) => (
+              <div 
+                key={i} 
+                className="w-20 bg-luxury-gold shrink-0 rounded-t-md mx-2 relative"
+                style={{ height: `${Math.random() * 150 + 50}px` }}
+              >
+                {theme === 'dark' && (
+                  <div className="grid grid-cols-2 gap-1 p-1 mt-2">
+                    {[...Array(6)].map((_, j) => (
+                      <div key={j} className="w-1 h-1 bg-luxury-gold/30 rounded-full animate-pulse" style={{ animationDelay: `${Math.random() * 2}s` }}></div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <span className="text-2xl font-serif font-bold tracking-tighter text-luxury-offwhite">RAMKY</span>
+            ))}
+            {[...Array(30)].map((_, i) => (
+              <div 
+                key={i + 30} 
+                className="w-20 bg-luxury-gold shrink-0 rounded-t-md mx-2 relative"
+                style={{ height: `${Math.random() * 150 + 50}px` }}
+              >
+                {theme === 'dark' && (
+                  <div className="grid grid-cols-2 gap-1 p-1 mt-2">
+                    {[...Array(6)].map((_, j) => (
+                      <div key={j} className="w-1 h-1 bg-luxury-gold/30 rounded-full animate-pulse" style={{ animationDelay: `${Math.random() * 2}s` }}></div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Layer 3: Front (Fastest) */}
+          <motion.div 
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-0 left-0 flex items-end opacity-20 dark:opacity-30"
+          >
+            {[...Array(40)].map((_, i) => (
+              <div 
+                key={i} 
+                className="w-12 bg-luxury-gold shrink-0 rounded-t-sm mx-1 relative"
+                style={{ height: `${Math.random() * 80 + 20}px` }}
+              >
+                {theme === 'dark' && (
+                  <div className="grid grid-cols-1 gap-1 p-1 mt-1">
+                    {[...Array(3)].map((_, j) => (
+                      <div key={j} className="w-1 h-1 bg-luxury-gold/50 rounded-full animate-pulse" style={{ animationDelay: `${Math.random() * 1.5}s` }}></div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {[...Array(40)].map((_, i) => (
+              <div 
+                key={i + 40} 
+                className="w-12 bg-luxury-gold shrink-0 rounded-t-sm mx-1 relative"
+                style={{ height: `${Math.random() * 80 + 20}px` }}
+              >
+                {theme === 'dark' && (
+                  <div className="grid grid-cols-1 gap-1 p-1 mt-1">
+                    {[...Array(3)].map((_, j) => (
+                      <div key={j} className="w-1 h-1 bg-luxury-gold/50 rounded-full animate-pulse" style={{ animationDelay: `${Math.random() * 1.5}s` }}></div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+          <div className="col-span-1 lg:col-span-1">
+            <div className="flex items-center space-x-3 mb-8">
+              <div className="w-10 h-10 bg-luxury-gold flex items-center justify-center rounded-sm">
+                <span className="text-[var(--bg-primary)] font-serif font-bold text-xl">R</span>
+              </div>
+              <span className="text-2xl font-serif font-bold tracking-tighter text-[var(--text-primary)]">RAMKY</span>
             </div>
-            <p className="text-luxury-offwhite/40 text-lg leading-relaxed font-light mb-10">
+            <p className="text-[var(--text-secondary)] text-sm leading-relaxed font-light mb-8">
               Crafting premium living experiences in the heart of Hyderabad's Future City.
             </p>
-            <div className="flex space-x-6">
-              {['Instagram', 'LinkedIn', 'Facebook'].map((social) => (
-                <a key={social} href="#" className="text-luxury-gold hover:text-luxury-offwhite transition-colors text-sm uppercase tracking-widest font-bold">{social}</a>
+            <div className="flex space-x-4">
+              {[Instagram, Linkedin, Facebook].map((Icon, i) => (
+                <a key={i} href="#" className="w-10 h-10 rounded-full border border-[var(--border-color)] flex items-center justify-center text-luxury-gold hover:bg-luxury-gold hover:text-[var(--bg-primary)] transition-all duration-500">
+                  <Icon size={18} />
+                </a>
               ))}
             </div>
           </div>
           
           <div>
-            <h4 className="text-xl font-serif mb-10 tracking-tight">Quick Links</h4>
-            <ul className="space-y-6">
+            <h4 className="text-lg font-serif mb-8 tracking-tight text-[var(--text-primary)]">Quick Links</h4>
+            <ul className="space-y-3">
               {['home', 'project', 'about', 'gallery', 'contact'].map((page) => (
                 <li key={page}>
                   <button 
                     onClick={() => setActivePage(page as Page)}
-                    className="text-luxury-offwhite/40 hover:text-luxury-gold transition-colors text-lg font-light capitalize"
+                    className="text-[var(--text-secondary)] hover:text-luxury-gold transition-colors text-sm font-light capitalize"
                   >
                     {page}
                   </button>
@@ -1117,31 +2347,51 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
           </div>
           
           <div>
-            <h4 className="text-xl font-serif mb-10 tracking-tight">Project Status</h4>
-            <ul className="space-y-6 text-luxury-offwhite/40 text-lg font-light">
-              <li>DTCP Approved</li>
-              <li>RERA Registered</li>
-              <li>Underground Cabling Complete</li>
-              <li>Clubhouse Construction Started</li>
+            <h4 className="text-lg font-serif mb-8 tracking-tight text-[var(--text-primary)]">Project Status</h4>
+            <ul className="space-y-3 text-[var(--text-secondary)] text-sm font-light">
+              <li className="flex items-center space-x-3">
+                <CheckCircle2 size={14} className="text-luxury-gold" />
+                <span>DTCP Approved</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <CheckCircle2 size={14} className="text-luxury-gold" />
+                <span>RERA Registered</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <CheckCircle2 size={14} className="text-luxury-gold" />
+                <span>Underground Cabling Complete</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <CheckCircle2 size={14} className="text-luxury-gold" />
+                <span>Clubhouse Construction Started</span>
+              </li>
             </ul>
           </div>
           
           <div>
-            <h4 className="text-xl font-serif mb-10 tracking-tight">Contact</h4>
-            <ul className="space-y-6 text-luxury-offwhite/40 text-lg font-light">
-              <li>Ramky Towers, Gachibowli</li>
-              <li>Hyderabad, 500032</li>
-              <li>+91 98765 43210</li>
-              <li>sales@ramkyinfra.com</li>
+            <h4 className="text-lg font-serif mb-8 tracking-tight text-[var(--text-primary)]">Contact</h4>
+            <ul className="space-y-4 text-[var(--text-secondary)] text-sm font-light">
+              <li className="flex items-start space-x-4">
+                <MapPin size={18} className="text-luxury-gold shrink-0 mt-1" />
+                <span>Ramky Towers, Gachibowli, Hyderabad, 500032</span>
+              </li>
+              <li className="flex items-center space-x-4">
+                <Phone size={18} className="text-luxury-gold shrink-0" />
+                <span>+91 98765 43210</span>
+              </li>
+              <li className="flex items-center space-x-4">
+                <Mail size={18} className="text-luxury-gold shrink-0" />
+                <span>sales@ramkyinfra.com</span>
+              </li>
             </ul>
           </div>
         </div>
         
-        <div className="pt-16 border-t border-white/5 flex flex-col md:flex-row justify-between items-center space-y-8 md:space-y-0">
-          <p className="text-luxury-offwhite/20 text-sm font-light">
+        <div className="pt-12 border-t border-[var(--border-color)] flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+          <p className="text-[var(--text-secondary)] text-[10px] font-light opacity-50">
             © 2026 Ramky Infra & Developers Pvt Ltd. All Rights Reserved.
           </p>
-          <div className="flex space-x-12 text-luxury-offwhite/20 text-sm font-light">
+          <div className="flex space-x-8 text-[var(--text-secondary)] text-[10px] font-light opacity-50">
             <a href="#" className="hover:text-luxury-gold transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-luxury-gold transition-colors">Terms & Conditions</a>
             <a href="#" className="hover:text-luxury-gold transition-colors">RERA Details</a>
@@ -1156,49 +2406,61 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
 
 export default function App() {
   const [activePage, setActivePage] = useState<Page>('home');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [activePage]);
 
   return (
-    <div className="min-h-screen bg-luxury-black text-luxury-offwhite selection:bg-luxury-gold selection:text-luxury-black">
-      <Navbar activePage={activePage} setActivePage={setActivePage} />
-      
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activePage}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+    <ThemeProvider>
+      <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] selection:bg-luxury-gold selection:text-luxury-black transition-colors duration-500">
+        <AnimatePresence>
+          {loading && <LoadingScreen />}
+        </AnimatePresence>
+        
+        <Navbar activePage={activePage} setActivePage={setActivePage} />
+        
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activePage}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {activePage === 'home' && <HomePage setActivePage={setActivePage} />}
+            {activePage === 'project' && <ProjectPage />}
+            {activePage === 'about' && <AboutPage />}
+            {activePage === 'gallery' && <GalleryPage />}
+            {activePage === 'contact' && <ContactPage />}
+          </motion.div>
+        </AnimatePresence>
+
+        <ExitIntentPopup />
+
+        <Footer setActivePage={setActivePage} />
+
+        {/* Sticky WhatsApp Button */}
+        <motion.a 
+          href="https://wa.me/919876543210" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 2, type: 'spring' }}
+          className="fixed bottom-10 right-10 z-50 w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform duration-300"
         >
-          {activePage === 'home' && <HomePage setActivePage={setActivePage} />}
-          {activePage === 'project' && <ProjectPage />}
-          {activePage === 'about' && <AboutPage />}
-          {activePage === 'gallery' && <GalleryPage />}
-          {activePage === 'contact' && <ContactPage />}
-        </motion.div>
-      </AnimatePresence>
-
-      <ExitIntentPopup />
-
-      <Footer setActivePage={setActivePage} />
-
-      {/* Sticky WhatsApp Button */}
-      <motion.a 
-        href="https://wa.me/919876543210" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 2, type: 'spring' }}
-        className="fixed bottom-10 right-10 z-50 w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform duration-300"
-      >
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-        </svg>
-      </motion.a>
-    </div>
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+          </svg>
+        </motion.a>
+      </div>
+    </ThemeProvider>
   );
 }
