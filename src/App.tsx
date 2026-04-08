@@ -2318,8 +2318,31 @@ const ContactPage = () => {
       return;
     }
 
-    // Create WhatsApp message
-    const whatsappMessage = `*New Inquiry - Ramky Brindavanam*
+    try {
+      // Store inquiry data in Google Sheets
+      const inquiryData = {
+        name,
+        phone,
+        email,
+        message,
+        timestamp: new Date().toISOString(),
+        source: 'Website Contact Form'
+      };
+
+      // Replace with your Google Apps Script web app URL
+      const scriptUrl = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inquiryData)
+      });
+
+      // Create WhatsApp message
+      const whatsappMessage = `*New Inquiry - Ramky Brindavanam*
 
 👤 *Name:* ${name}
 📞 *Phone:* ${phone}
@@ -2331,15 +2354,15 @@ const ContactPage = () => {
 
 *Sent via Website Contact Form*`;
 
-    // WhatsApp URL (replace with your actual WhatsApp number)
-    const whatsappUrl = `https://wa.me/919966858799?text=${encodeURIComponent(whatsappMessage)}`;
+      // WhatsApp URL
+      const whatsappUrl = `https://wa.me/919966858799?text=${encodeURIComponent(whatsappMessage)}`;
 
-    // Open WhatsApp
-    window.open(whatsappUrl, '_blank');
+      // Open WhatsApp
+      window.open(whatsappUrl, '_blank');
 
-    // Also send email as backup
-    const emailSubject = `New Inquiry - Ramky Brindavanam from ${name}`;
-    const emailBody = `New inquiry received:
+      // Also send email as backup
+      const emailSubject = `New Inquiry - Ramky Brindavanam from ${name}`;
+      const emailBody = `New inquiry received:
 
 Name: ${name}
 Phone: ${phone}
@@ -2351,23 +2374,27 @@ Location: Jubilee Hills, Hyderabad
 
 Sent via website contact form on ${new Date().toLocaleString()}`;
 
-    const emailUrl = `mailto:ramkyinfra3999@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      const emailUrl = `mailto:ramkyinfra3999@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
 
-    // Open email client as backup
-    setTimeout(() => {
-      window.open(emailUrl, '_blank');
-    }, 1000);
+      // Open email client as backup
+      setTimeout(() => {
+        window.open(emailUrl, '_blank');
+      }, 1000);
 
-    // Reset form
-    if (nameRef.current) nameRef.current.value = '';
-    if (phoneRef.current) phoneRef.current.value = '';
-    if (emailRef.current) emailRef.current.value = '';
-    if (messageRef.current) messageRef.current.value = '';
+      // Reset form
+      if (nameRef.current) nameRef.current.value = '';
+      if (phoneRef.current) phoneRef.current.value = '';
+      if (emailRef.current) emailRef.current.value = '';
+      if (messageRef.current) messageRef.current.value = '';
+
+      alert('Thank you! Your inquiry has been stored and sent via WhatsApp and email. We will get back to you soon!');
+
+    } catch (error) {
+      console.error('Error storing inquiry:', error);
+      alert('There was an error storing your inquiry, but we\'ve sent it via WhatsApp and email. Please try again later.');
+    }
 
     setIsSubmitting(false);
-
-    // Show success message
-    alert('Thank you! Your inquiry has been sent via WhatsApp and email. We will get back to you soon!');
   };
 
   return (
