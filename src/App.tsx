@@ -2369,6 +2369,8 @@ Sent via website contact form on ${new Date().toLocaleString()}`;
     // Show success message
     alert('Thank you! Your inquiry has been sent via WhatsApp and email. We will get back to you soon!');
   };
+
+  return (
     <main className="pt-32 md:pt-48 pb-24 md:pb-32 bg-[var(--bg-primary)]">
       <div className="container mx-auto px-6">
         <SectionHeading title="Book Your Site Visit" subtitle="Get in Touch" />
