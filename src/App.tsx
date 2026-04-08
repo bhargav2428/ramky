@@ -50,6 +50,8 @@ import {
   Cpu,
   Layers,
   Wind,
+  Droplets,
+  Heart,
   Sun,
   Moon,
   FileText,
@@ -1050,8 +1052,9 @@ const SnapshotCard = ({ icon: Icon, title, value, description }: { icon: any, ti
     viewport={{ once: true }}
     whileHover={{ y: -10, scale: 1.02 }}
     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-    className="glass-card p-10 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/40 transition-all duration-700 group text-center"
+    className="glass-card p-10 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/40 transition-all duration-700 group text-center relative overflow-hidden"
   >
+    <div className="absolute -inset-1 bg-gradient-to-r from-luxury-gold/0 via-luxury-gold/5 to-luxury-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10 blur-xl"></div>
     <div className="w-14 h-14 bg-luxury-gold/10 rounded-full flex items-center justify-center mb-6 text-luxury-gold group-hover:bg-luxury-gold group-hover:text-[var(--bg-primary)] transition-all duration-700 mx-auto">
       <Icon size={24} />
     </div>
@@ -1407,7 +1410,7 @@ const InteractiveFloorPlan = () => {
   );
 };
 
-const AmenityCard = ({ icon: Icon, title, description }: { icon: any, title: string, description: string }) => (
+const AmenityCard = ({ icon: Icon, title, description, image }: { icon: any, title: string, description: string, image: string }) => (
   <motion.div 
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -1418,7 +1421,7 @@ const AmenityCard = ({ icon: Icon, title, description }: { icon: any, title: str
     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10 opacity-80 group-hover:opacity-90 transition-opacity duration-700"></div>
     <div className="absolute inset-0 scale-110 group-hover:scale-100 transition-transform duration-[2s] opacity-50 group-hover:opacity-70">
       <img 
-        src="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=2070&auto=format&fit=crop" 
+        src={image} 
         alt={title} 
         className="w-full h-full object-cover"
         referrerPolicy="no-referrer"
@@ -1568,6 +1571,12 @@ const FounderSection = () => {
               <span className="text-luxury-gold text-[10px] uppercase tracking-[0.6em] font-bold mb-6 block">The Visionary</span>
               <h2 className="text-4xl md:text-5xl font-serif mb-4 text-[var(--text-primary)] leading-tight">Ramakrishna <span className="italic text-luxury-gold">Garagaparthi</span></h2>
               <p className="text-luxury-gold text-xs uppercase tracking-[0.3em] font-bold mb-8">Actor, Producer & Businessman</p>
+              
+              {/* Signature Style Name */}
+              <div className="mb-8 opacity-40 select-none pointer-events-none">
+                <span className="font-serif text-5xl md:text-6xl text-luxury-gold italic tracking-tighter">Ramky</span>
+              </div>
+
               <p className="text-[var(--text-secondary)] text-lg font-light leading-relaxed mb-8">
                 Popularly known as Ramky, he is a prominent builder and an acclaimed actor in the Telugu film industry. Starting his career with the Nandi Award-winning film "Gangaputhrulu," he has since founded Ramky Infra & Developers Pvt Ltd with a vision to deliver high-quality, affordable housing.
               </p>
@@ -1597,35 +1606,40 @@ const ProjectRoadmap = () => {
       title: "Vision & Acquisition",
       description: "Strategic acquisition of 100 acres in the heart of the Future City growth corridor.",
       status: "completed",
-      icon: <Target className="w-6 h-6" />
+      icon: <Target className="w-6 h-6" />,
+      image: "https://images.unsplash.com/photo-1449156001935-d2863fb72690?q=80&w=800"
     },
     {
       year: "2024",
       title: "Master Planning",
       description: "Collaboration with global urban designers to create a sustainable, luxury ecosystem.",
       status: "completed",
-      icon: <Layers className="w-6 h-6" />
+      icon: <Layers className="w-6 h-6" />,
+      image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=800"
     },
     {
       year: "2025",
       title: "Infrastructure Launch",
       description: "Commencement of 60ft & 40ft internal roads, drainage, and underground cabling.",
       status: "current",
-      icon: <Activity className="w-6 h-6" />
+      icon: <Activity className="w-6 h-6" />,
+      image: "https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=800"
     },
     {
       year: "2026",
       title: "Amenity Development",
       description: "Grand Clubhouse construction and themed park landscaping in full swing.",
       status: "upcoming",
-      icon: <Zap className="w-6 h-6" />
+      icon: <Zap className="w-6 h-6" />,
+      image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=800"
     },
     {
       year: "2027",
       title: "The Grand Handover",
       description: "Completion of the 100-acre masterpiece and welcoming the first residents.",
       status: "upcoming",
-      icon: <Rocket className="w-6 h-6" />
+      icon: <Rocket className="w-6 h-6" />,
+      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800"
     }
   ];
 
@@ -1655,7 +1669,16 @@ const ProjectRoadmap = () => {
               >
                 {/* Content */}
                 <div className="w-full md:w-1/2 px-6 md:px-12 text-center md:text-left">
-                  <div className={`${i % 2 === 0 ? 'md:text-left' : 'md:text-right'}`}>
+                  <div className={`${i % 2 === 0 ? 'md:text-left' : 'md:text-right'} group`}>
+                    <div className="relative mb-6 inline-block overflow-hidden rounded-sm shadow-xl">
+                      <img 
+                        src={m.image} 
+                        alt={m.title} 
+                        className="w-48 h-32 object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-luxury-gold/10 group-hover:bg-transparent transition-colors duration-700"></div>
+                    </div>
                     <span className="text-luxury-gold font-mono text-sm tracking-[0.3em] mb-2 block">{m.year}</span>
                     <h3 className="text-2xl font-serif text-[var(--text-primary)] mb-4">{m.title}</h3>
                     <p className="text-[var(--text-secondary)] font-light leading-relaxed max-w-md mx-auto md:mx-0">
@@ -1862,21 +1885,25 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
               icon={Building2} 
               title="Grand Clubhouse" 
               description="A 50,000 sq.ft. space for social excellence, recreation, and elite networking."
+              image="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=2070&auto=format&fit=crop"
             />
             <AmenityCard 
               icon={Trees} 
               title="Themed Parks" 
               description="Meticulously landscaped gardens, Zen zones, and serene walking trails."
+              image="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=2070&auto=format&fit=crop"
             />
             <AmenityCard 
               icon={Users} 
               title="Goshala" 
               description="A traditional touch of serenity, sustainable living, and spiritual connection."
+              image="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop"
             />
             <AmenityCard 
               icon={Route} 
               title="Wide Roads" 
               description="60ft and 40ft wide internal roads with premium streetscaping and lighting."
+              image="https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=2070&auto=format&fit=crop"
             />
           </div>
         </div>
@@ -2053,9 +2080,21 @@ const AboutPage = () => {
           <SectionHeading title="Social Contributions" subtitle="Making a Difference" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-16">
             {[
-              { title: "Cyclone Relief", desc: "Distributed food and aid to people affected by the Titli cyclone in Srikakulam." },
-              { title: "Flood Support", desc: "Donated ₹5 lakhs to the Telangana government during severe Hyderabad floods." },
-              { title: "Social Activism", desc: "Voice for millions in the fight for Special Category status for Andhra Pradesh." }
+              { 
+                title: "Cyclone Relief", 
+                desc: "Distributed food and aid to people affected by the Titli cyclone in Srikakulam.",
+                icon: <Wind className="text-luxury-gold" size={32} />
+              },
+              { 
+                title: "Flood Support", 
+                desc: "Donated ₹5 lakhs to the Telangana government during severe Hyderabad floods.",
+                icon: <Droplets className="text-luxury-gold" size={32} />
+              },
+              { 
+                title: "Social Activism", 
+                desc: "Voice for millions in the fight for Special Category status for Andhra Pradesh.",
+                icon: <Heart className="text-luxury-gold" size={32} />
+              }
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -2063,8 +2102,11 @@ const AboutPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.2 }}
-                className="glass-card p-10 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/30 transition-all duration-500"
+                className="glass-card p-10 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/30 transition-all duration-500 group"
               >
+                <div className="mb-6 transform group-hover:scale-110 transition-transform duration-500">
+                  {item.icon}
+                </div>
                 <h4 className="text-xl font-serif text-luxury-gold mb-4">{item.title}</h4>
                 <p className="text-[var(--text-secondary)] text-sm font-light leading-relaxed">{item.desc}</p>
               </motion.div>
