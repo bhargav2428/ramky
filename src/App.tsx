@@ -60,7 +60,7 @@ import {
 import { useState, useEffect, useRef, ReactNode, createContext, useContext } from "react";
 
 // --- Types ---
-type Page = 'home' | 'project' | 'about' | 'gallery' | 'contact';
+type Page = 'home' | 'project' | 'about' | 'gallery' | 'contact' | 'blogs';
 type Theme = 'dark' | 'light';
 
 interface ThemeContextType {
@@ -387,13 +387,13 @@ const HeroCarousel = ({ onCtaClick }: { onCtaClick: () => void }) => {
       desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
     },
     {
-      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop",
+      image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2070&auto=format&fit=crop",
       title: "Strategic Investment",
       subtitle: "Future City Growth",
       desc: "Positioned in the 4th Growth Zone of Hyderabad, ensuring unparalleled appreciation and ROI."
     },
     {
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop",
+      image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=2070&auto=format&fit=crop",
       title: "Architectural Excellence",
       subtitle: "Curated Luxury",
       desc: "Meticulously planned infrastructure with underground cabling, wide roads, and elite amenities."
@@ -521,7 +521,7 @@ const MasterPlanSection = () => {
             className="rounded-sm overflow-hidden border border-[var(--border-color)] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative"
           >
             <img 
-              src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=2070&auto=format&fit=crop" 
               alt="Master Plan Overview" 
               className="w-full aspect-video object-cover opacity-80 group-hover:scale-105 transition-transform duration-[3s]"
               referrerPolicy="no-referrer"
@@ -790,6 +790,7 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
     { label: "The Project", id: "project" },
     { label: "About Us", id: "about" },
     { label: "Gallery", id: "gallery" },
+    { label: "Blogs", id: "blogs" },
     { label: "Contact", id: "contact" },
   ];
 
@@ -899,13 +900,13 @@ const Hero = ({ onCtaClick }: { onCtaClick: () => void }) => {
       desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
     },
     {
-      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop",
+      image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2070&auto=format&fit=crop",
       title: "Future City Growth",
       subtitle: "Strategic Investment",
       desc: "Positioned at the epicenter of Hyderabad's next global growth engine with massive appreciation potential."
     },
     {
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop",
+      image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=2070&auto=format&fit=crop",
       title: "Architectural Marvel",
       subtitle: "Modern Infrastructure",
       desc: "Experience world-class amenities and futuristic design that redefines urban luxury living."
@@ -1088,7 +1089,7 @@ const floorPlans: FloorPlan[] = [
         name: "Grand Living Room",
         area: "450 Sq.Ft",
         description: "A spacious, double-height living area designed for grand gatherings and premium comfort.",
-        image: "https://images.unsplash.com/photo-1600607687940-467f5b637a53?q=80&w=2070&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2070&auto=format&fit=crop",
         path: "M 10 10 H 190 V 110 H 10 Z",
         icon: Sofa
       },
@@ -1106,7 +1107,7 @@ const floorPlans: FloorPlan[] = [
         name: "Gourmet Kitchen",
         area: "220 Sq.Ft",
         description: "State-of-the-art modular kitchen with premium finishes and a dedicated utility area.",
-        image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=2070&auto=format&fit=crop",
         path: "M 10 110 H 110 V 210 H 10 Z",
         icon: Utensils
       },
@@ -1417,7 +1418,7 @@ const AmenityCard = ({ icon: Icon, title, description }: { icon: any, title: str
     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10 opacity-80 group-hover:opacity-90 transition-opacity duration-700"></div>
     <div className="absolute inset-0 scale-110 group-hover:scale-100 transition-transform duration-[2s] opacity-50 group-hover:opacity-70">
       <img 
-        src={`https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop`} 
+        src="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=2070&auto=format&fit=crop" 
         alt={title} 
         className="w-full h-full object-cover"
         referrerPolicy="no-referrer"
@@ -1549,8 +1550,8 @@ const FounderSection = () => {
           <Reveal delay={0.2}>
             <div className="relative aspect-[4/5] rounded-sm overflow-hidden group shadow-2xl order-first lg:order-last">
               <img 
-                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop" 
-                alt="Founder" 
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop" 
+                alt="Ramakrishna Garagaparthi" 
                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 referrerPolicy="no-referrer"
               />
@@ -1565,19 +1566,21 @@ const FounderSection = () => {
             <div className="glass-card p-10 md:p-16 rounded-sm border-[var(--border-color)] relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-luxury-gold/5 blur-3xl -z-0 group-hover:bg-luxury-gold/10 transition-colors duration-700"></div>
               <span className="text-luxury-gold text-[10px] uppercase tracking-[0.6em] font-bold mb-6 block">The Visionary</span>
-              <h2 className="text-4xl md:text-5xl font-serif mb-8 text-[var(--text-primary)] leading-tight">Founder – <span className="italic text-luxury-gold">Ramky</span></h2>
-              <p className="text-[var(--text-secondary)] text-lg font-light leading-relaxed mb-10">
-                With over three decades of excellence in infrastructure and real estate, our founder's vision has always been about creating sustainable, luxury ecosystems that stand the test of time. Ramky's Brindavanam is the culmination of this lifelong commitment to quality and innovation.
+              <h2 className="text-4xl md:text-5xl font-serif mb-4 text-[var(--text-primary)] leading-tight">Ramakrishna <span className="italic text-luxury-gold">Garagaparthi</span></h2>
+              <p className="text-luxury-gold text-xs uppercase tracking-[0.3em] font-bold mb-8">Actor, Producer & Businessman</p>
+              <p className="text-[var(--text-secondary)] text-lg font-light leading-relaxed mb-8">
+                Popularly known as Ramky, he is a prominent builder and an acclaimed actor in the Telugu film industry. Starting his career with the Nandi Award-winning film "Gangaputhrulu," he has since founded Ramky Infra & Developers Pvt Ltd with a vision to deliver high-quality, affordable housing.
               </p>
-              <a 
-                href="/founder-profile.pdf" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-3 text-luxury-gold hover:text-[var(--text-primary)] transition-colors group/link"
-              >
-                <span className="text-xs uppercase tracking-[0.4em] font-bold">Read More</span>
-                <ExternalLink size={16} className="group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-transform" />
-              </a>
+              <div className="space-y-6 mb-10">
+                <div>
+                  <h4 className="text-luxury-gold font-serif text-xl mb-2">Vision</h4>
+                  <p className="text-[var(--text-secondary)] text-sm font-light">To deliver high-quality construction at affordable prices, making housing accessible to all.</p>
+                </div>
+                <div>
+                  <h4 className="text-luxury-gold font-serif text-xl mb-2">Mission</h4>
+                  <p className="text-[var(--text-secondary)] text-sm font-light">To help middle-class families achieve the dream of owning a home and lead a stable, secure life.</p>
+                </div>
+              </div>
             </div>
           </Reveal>
         </div>
@@ -1907,7 +1910,7 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
       <section className="py-20 md:py-24 bg-[var(--bg-primary)] relative overflow-hidden">
         <div className="absolute inset-0 opacity-40">
           <img 
-            src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop" 
+            src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2070&auto=format&fit=crop" 
             alt="Luxury Real Estate Drone" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -1938,17 +1941,17 @@ const ProjectPage = () => {
     {
       title: "The Grand Entrance",
       desc: "A majestic gateway that reflects the stature of its residents.",
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=2070&auto=format&fit=crop"
     },
     {
       title: "Elite Clubhouse",
       desc: "A 50,000 sq.ft. sanctuary of leisure and social connection.",
-      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=2070&auto=format&fit=crop"
     },
     {
       title: "Themed Parks",
       desc: "Lush landscapes designed for serenity and active living.",
-      image: "https://images.unsplash.com/photo-1600607687940-467f5b637a53?q=80&w=2070&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=2070&auto=format&fit=crop"
     }
   ];
 
@@ -2002,38 +2005,41 @@ const AboutPage = () => {
   return (
     <main className="pt-32 md:pt-48 bg-[var(--bg-primary)]">
       <section className="container mx-auto px-6 mb-24 md:mb-32">
-        <SectionHeading title="Legacy of Trust" subtitle="About Ramky Infra" />
+        <SectionHeading title="Legacy of Excellence" subtitle="About Ramakrishna Garagaparthi" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-32 items-center">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-            className="aspect-square rounded-sm overflow-hidden shadow-2xl"
+            className="aspect-[4/5] rounded-sm overflow-hidden shadow-2xl"
           >
             <img 
-              src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop" 
-              alt="Ramky Infra Headquarters" 
+              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop" 
+              alt="Ramakrishna Garagaparthi" 
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-[5s]"
               referrerPolicy="no-referrer"
             />
           </motion.div>
           <Reveal>
-            <h3 className="text-3xl md:text-5xl font-serif mb-8 text-luxury-gold tracking-tight">Building the Future Since 1994</h3>
-            <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-8 font-light">
-              Ramky Infra is a leading infrastructure development and management company in India. With a focus on sustainable growth and excellence, we have delivered landmark projects across sectors.
+            <h3 className="text-3xl md:text-5xl font-serif mb-8 text-luxury-gold tracking-tight">A Journey of Passion & Purpose</h3>
+            <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-6 font-light">
+              Garagaparthi Ramakrishna, popularly known as Ramky, is an Indian film actor and businessman. He started his career with the movie "Gangaputhrulu," earning the prestigious Nandi Award for Best Debut Hero in 2010.
+            </p>
+            <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-6 font-light">
+              Beyond cinema, he established GRK Films and produced meaningful films like "Journalist," highlighting the impact of media in politics. His entrepreneurial spirit led him to found Ramky Infra & Developers Pvt Ltd, where he focuses on delivering high-quality, affordable housing.
             </p>
             <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-10 font-light">
-              Ramky’s Brindavanam is our latest vision for premium living—a perfect blend of nature, modern infrastructure, and strategic location in the heart of the Future City.
+              Ramky is also a dedicated social activist, contributing to Titli cyclone relief, Pulwama attack vigils, and Hyderabad flood relief. He serves as a member of the Disciplinary Committee in the Film Chamber, upholding ethical standards in the industry.
             </p>
-            <div className="grid grid-cols-2 gap-10">
+            <div className="grid grid-cols-2 gap-8">
               <div>
-                <h4 className="text-4xl font-serif text-luxury-gold mb-2 tracking-tighter">30+</h4>
-                <p className="text-[var(--text-secondary)] uppercase tracking-[0.3em] text-[10px] font-bold opacity-40">Years of Excellence</p>
+                <h4 className="text-3xl font-serif text-luxury-gold mb-1">Nandi Award</h4>
+                <p className="text-[var(--text-secondary)] uppercase tracking-[0.2em] text-[10px] font-bold opacity-60">Best Debut Hero (2010)</p>
               </div>
               <div>
-                <h4 className="text-4xl font-serif text-luxury-gold mb-2 tracking-tighter">180+</h4>
-                <p className="text-[var(--text-secondary)] uppercase tracking-[0.3em] text-[10px] font-bold opacity-40">Projects Delivered</p>
+                <h4 className="text-3xl font-serif text-luxury-gold mb-1">GRK Films</h4>
+                <p className="text-[var(--text-secondary)] uppercase tracking-[0.2em] text-[10px] font-bold opacity-60">Production House</p>
               </div>
             </div>
           </Reveal>
@@ -2042,26 +2048,28 @@ const AboutPage = () => {
 
       <VisionMissionSection />
 
-      <section className="py-24 md:py-32 container mx-auto px-6">
-        <Reveal>
-          <div className="text-center mb-24">
-            <h3 className="text-4xl md:text-6xl font-serif mb-6 tracking-tight text-[var(--text-primary)]">Trusted Partners</h3>
-            <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto font-light">Collaborating with global leaders to ensure the highest standards of quality and design.</p>
+      <section className="py-24 md:py-32 bg-[var(--bg-secondary)] relative overflow-hidden">
+        <div className="container mx-auto px-6">
+          <SectionHeading title="Social Contributions" subtitle="Making a Difference" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-16">
+            {[
+              { title: "Cyclone Relief", desc: "Distributed food and aid to people affected by the Titli cyclone in Srikakulam." },
+              { title: "Flood Support", desc: "Donated ₹5 lakhs to the Telangana government during severe Hyderabad floods." },
+              { title: "Social Activism", desc: "Voice for millions in the fight for Special Category status for Andhra Pradesh." }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.2 }}
+                className="glass-card p-10 rounded-sm border-[var(--border-color)] hover:border-luxury-gold/30 transition-all duration-500"
+              >
+                <h4 className="text-xl font-serif text-luxury-gold mb-4">{item.title}</h4>
+                <p className="text-[var(--text-secondary)] text-sm font-light leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
           </div>
-        </Reveal>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-16 items-center opacity-30">
-          {[1, 2, 3, 4].map((i) => (
-            <motion.div 
-              key={i} 
-              whileHover={{ opacity: 1, scale: 1.1 }}
-              className="flex justify-center grayscale hover:grayscale-0 transition-all duration-700"
-            >
-              <div className="flex items-center space-x-4">
-                <Building2 className="text-luxury-gold" size={32} />
-                <div className="text-xl md:text-2xl font-serif text-[var(--text-primary)] tracking-widest uppercase">Partner {i}</div>
-              </div>
-            </motion.div>
-          ))}
         </div>
       </section>
     </main>
@@ -2070,12 +2078,12 @@ const AboutPage = () => {
 
 const GalleryPage = () => {
   const images = [
-    { url: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop", cat: "Layout" },
-    { url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop", cat: "Development" },
-    { url: "https://images.unsplash.com/photo-1600607687940-467f5b637a53?q=80&w=2070&auto=format&fit=crop", cat: "Lifestyle" },
     { url: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=2070&auto=format&fit=crop", cat: "Layout" },
     { url: "https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?q=80&w=2070&auto=format&fit=crop", cat: "Development" },
     { url: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=2070&auto=format&fit=crop", cat: "Lifestyle" },
+    { url: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?q=80&w=2070&auto=format&fit=crop", cat: "Layout" },
+    { url: "https://images.unsplash.com/photo-1600585154526-990dcea4db0d?q=80&w=2070&auto=format&fit=crop", cat: "Development" },
+    { url: "https://images.unsplash.com/photo-1600607687940-467f5b637a53?q=80&w=2070&auto=format&fit=crop", cat: "Lifestyle" },
   ];
 
   return (
@@ -2108,6 +2116,98 @@ const GalleryPage = () => {
           ))}
         </div>
       </div>
+    </main>
+  );
+};
+
+const BlogPage = () => {
+  const blogs = [
+    {
+      id: 1,
+      title: "The Future of Sustainable Living in Hyderabad",
+      excerpt: "Discover how Ramky's Brindavanam is setting new standards for eco-friendly infrastructure and green living spaces.",
+      date: "March 28, 2026",
+      image: "https://images.unsplash.com/photo-1518005020250-6859b2827c17?q=80&w=2070&auto=format&fit=crop",
+      category: "Sustainability"
+    },
+    {
+      id: 2,
+      title: "Investment Opportunities in the Future City",
+      excerpt: "Why the upcoming Future City corridor is the most promising real estate investment in Southern India today.",
+      date: "April 02, 2026",
+      image: "https://images.unsplash.com/photo-1460472178825-e525062995c2?q=80&w=2070&auto=format&fit=crop",
+      category: "Investment"
+    },
+    {
+      id: 3,
+      title: "Modern Amenities: Redefining Luxury",
+      excerpt: "A deep dive into the world-class amenities at Brindavanam, from the infinity pool to the organic community gardens.",
+      date: "April 05, 2026",
+      image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=2070&auto=format&fit=crop",
+      category: "Lifestyle"
+    }
+  ];
+
+  return (
+    <main className="pt-32 md:pt-48 bg-[var(--bg-primary)]">
+      <section className="container mx-auto px-6 mb-24 md:mb-32">
+        <SectionHeading title="Insights & Updates" subtitle="Our Blog" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          {blogs.map((blog, i) => (
+            <motion.div
+              key={blog.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1, duration: 0.8 }}
+              className="group cursor-pointer"
+            >
+              <div className="aspect-[16/10] overflow-hidden rounded-sm mb-6 relative">
+                <img 
+                  src={blog.image} 
+                  alt={blog.title} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute top-4 left-4 bg-luxury-gold text-[var(--bg-primary)] px-3 py-1 text-[10px] uppercase tracking-widest font-bold">
+                  {blog.category}
+                </div>
+              </div>
+              <p className="text-luxury-gold text-[10px] uppercase tracking-[0.2em] font-bold mb-3">{blog.date}</p>
+              <h3 className="text-2xl font-serif mb-4 group-hover:text-luxury-gold transition-colors leading-tight">{blog.title}</h3>
+              <p className="text-[var(--text-secondary)] text-sm font-light leading-relaxed mb-6 line-clamp-2">
+                {blog.excerpt}
+              </p>
+              <div className="flex items-center text-luxury-gold text-[10px] uppercase tracking-widest font-bold group/link">
+                Read More 
+                <ArrowRight size={14} className="ml-2 group-hover/link:translate-x-2 transition-transform" />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-24 md:py-32 bg-luxury-gold/5 border-y border-luxury-gold/10">
+        <div className="container mx-auto px-6 text-center">
+          <Reveal>
+            <h3 className="text-3xl md:text-5xl font-serif mb-6 tracking-tight">Stay Informed</h3>
+            <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto font-light mb-12">
+              Subscribe to our newsletter to receive the latest updates on project progress, market insights, and exclusive offers.
+            </p>
+            <div className="max-w-md mx-auto flex gap-4">
+              <input 
+                type="email" 
+                placeholder="Your Email Address" 
+                className="flex-1 bg-[var(--bg-secondary)] border border-[var(--border-color)] px-6 py-4 rounded-sm text-sm focus:border-luxury-gold outline-none transition-colors"
+              />
+              <button className="px-8 py-4 bg-luxury-gold text-[var(--bg-primary)] text-[10px] uppercase tracking-widest font-bold hover:bg-[var(--text-primary)] transition-all">
+                Subscribe
+              </button>
+            </div>
+          </Reveal>
+        </div>
+      </section>
     </main>
   );
 };
@@ -2335,7 +2435,7 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
           <div>
             <h4 className="text-lg font-serif mb-8 tracking-tight text-[var(--text-primary)]">Quick Links</h4>
             <ul className="space-y-3">
-              {['home', 'project', 'about', 'gallery', 'contact'].map((page) => (
+              {['home', 'project', 'about', 'gallery', 'blogs', 'contact'].map((page) => (
                 <li key={page}>
                   <button 
                     onClick={() => setActivePage(page as Page)}
@@ -2636,6 +2736,7 @@ export default function App() {
             {activePage === 'project' && <ProjectPage />}
             {activePage === 'about' && <AboutPage />}
             {activePage === 'gallery' && <GalleryPage />}
+            {activePage === 'blogs' && <BlogPage />}
             {activePage === 'contact' && <ContactPage />}
           </motion.div>
         </AnimatePresence>
