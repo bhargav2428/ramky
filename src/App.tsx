@@ -1,11 +1,11 @@
 import { motion, useScroll, useTransform, useSpring, useInView, AnimatePresence } from "motion/react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { 
-  OrbitControls, 
-  PerspectiveCamera, 
-  Environment, 
-  ContactShadows, 
-  Float, 
+import {
+  OrbitControls,
+  PerspectiveCamera,
+  Environment,
+  ContactShadows,
+  Float,
   Text,
   Html,
   PresentationControls,
@@ -14,15 +14,15 @@ import {
   useBounds
 } from "@react-three/drei";
 import * as THREE from "three";
-import { 
-  MapPin, 
-  Shield, 
-  TrendingUp, 
-  Trees, 
-  Route, 
-  Building2, 
-  Phone, 
-  Mail, 
+import {
+  MapPin,
+  Shield,
+  TrendingUp,
+  Trees,
+  Route,
+  Building2,
+  Phone,
+  Mail,
   ChevronRight,
   ArrowRight,
   Instagram,
@@ -116,6 +116,29 @@ interface RevealProps {
   width?: "fit-content" | "100%";
   delay?: number;
 }
+
+const localImages = {
+  logo: "/image 12.png",
+  logoAlt: "/image 12 copy.png",
+  founder: "/image.png",
+  heroA: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80", // Luxury villa exterior for "The Pinnacle of Living"
+  heroB: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1200&q=80", // Modern city skyline for "Strategic Investment"
+  heroC: "/9.Arch Brindavanam (1) 1.png",
+  aerial: "/DJI_0171 (1).JPG",
+  masterPlan: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80", // Architectural master plan layout
+  amenityA: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80", // Luxury clubhouse interior
+  amenityB: "https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=800&q=80", // Infinity swimming pool
+  amenityC: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80", // Modern fitness gym
+  amenityD: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80", // Beautiful landscaped park
+  galleryA: "/image 6.png", // Layout image 1
+  galleryB: "/image 7.png", // Layout image 2
+  galleryC: "/image 8.png", // Layout image 3
+  galleryD: "/image 9.png", // Layout image 4
+  galleryE: "/image 10.png", // Layout image 5
+  galleryF: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80", // Community gathering space
+  blueprintA: "/image 4.png", // 2D Blueprint 1
+  blueprintB: "/image 5.png", // 2D Blueprint 2
+} as const;
 
 // --- 3D Components ---
 
@@ -329,9 +352,11 @@ const LoadingScreen = () => {
           transition={{ duration: 1, ease: "easeOut" }}
           className="relative z-10"
         >
-          <div className="w-20 h-20 bg-luxury-gold flex items-center justify-center rounded-sm">
-            <span className="text-[var(--bg-primary)] font-serif font-bold text-4xl">R</span>
-          </div>
+          <img
+            src={localImages.logo}
+            alt="Ramky Brindavanam logo"
+            className="w-20 h-20 rounded-sm object-cover shadow-2xl"
+          />
         </motion.div>
         
         {/* Pulsing Rings */}
@@ -383,19 +408,19 @@ const HeroCarousel = ({ onCtaClick }: { onCtaClick: () => void }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const slides = [
     {
-      image: "https://images.unsplash.com/photo-1449156001935-d2863fb72690?q=80&w=2070&auto=format&fit=crop",
+      image: localImages.heroA,
       title: "The Pinnacle of Living",
       subtitle: "Ramky’s Brindavanam",
       desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
     },
     {
-      image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2070&auto=format&fit=crop",
+      image: localImages.heroB,
       title: "Strategic Investment",
       subtitle: "Future City Growth",
       desc: "Positioned in the 4th Growth Zone of Hyderabad, ensuring unparalleled appreciation and ROI."
     },
     {
-      image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=2070&auto=format&fit=crop",
+      image: localImages.heroC,
       title: "Architectural Excellence",
       subtitle: "Curated Luxury",
       desc: "Meticulously planned infrastructure with underground cabling, wide roads, and elite amenities."
@@ -523,10 +548,9 @@ const MasterPlanSection = () => {
             className="rounded-sm overflow-hidden border border-[var(--border-color)] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative"
           >
             <img 
-              src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=2070&auto=format&fit=crop" 
+              src={localImages.masterPlan} 
               alt="Master Plan Overview" 
               className="w-full aspect-video object-cover opacity-80 group-hover:scale-105 transition-transform duration-[3s]"
-              referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-luxury-black/90 via-transparent to-transparent"></div>
             
@@ -803,13 +827,15 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
           className="flex items-center cursor-pointer group"
           onClick={() => setActivePage('home')}
         >
-          <div className="w-10 h-10 bg-luxury-gold flex items-center justify-center rounded-sm mr-4 group-hover:scale-110 transition-transform duration-500">
-            <span className="text-[var(--bg-primary)] font-serif font-bold text-xl">R</span>
-          </div>
-          <div className="relative">
+          <img
+            src={localImages.logo}
+            alt="Ramky logo"
+            className="w-32 h-20 rounded-sm object-cover mr-4 group-hover:scale-110 transition-transform duration-500"
+          />
+          {/* <div className="relative">
             <span className="text-2xl md:text-3xl font-serif font-bold tracking-tighter text-luxury-gold group-hover:text-[var(--text-primary)] transition-colors">RAMKY</span>
             <div className="absolute -bottom-1 left-0 w-0 h-[1px] bg-luxury-gold group-hover:w-full transition-all duration-500"></div>
-          </div>
+          </div> */}
           <div className="ml-3 border-l border-luxury-gold/30 pl-3 hidden md:block">
             <p className="text-[10px] uppercase tracking-[0.3em] font-medium text-[var(--text-secondary)]">Infra & Developers</p>
           </div>
@@ -896,19 +922,19 @@ const Hero = ({ onCtaClick }: { onCtaClick: () => void }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const slides = [
     {
-      image: "https://images.unsplash.com/photo-1449156001935-d2863fb72690?q=80&w=2070&auto=format&fit=crop",
+      image: localImages.heroA,
       title: "Ramky’s Brindavanam",
       subtitle: "The Pinnacle of Living",
       desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
     },
     {
-      image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2070&auto=format&fit=crop",
+      image: "/image 1.png",
       title: "Future City Growth",
       subtitle: "Strategic Investment",
       desc: "Positioned at the epicenter of Hyderabad's next global growth engine with massive appreciation potential."
     },
     {
-      image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=2070&auto=format&fit=crop",
+      image: "/image 3.png",
       title: "Architectural Marvel",
       subtitle: "Modern Infrastructure",
       desc: "Experience world-class amenities and futuristic design that redefines urban luxury living."
@@ -1092,7 +1118,7 @@ const floorPlans: FloorPlan[] = [
         name: "Grand Living Room",
         area: "450 Sq.Ft",
         description: "A spacious, double-height living area designed for grand gatherings and premium comfort.",
-        image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2070&auto=format&fit=crop",
+        image: localImages.galleryB, // Luxury interiors image
         path: "M 10 10 H 190 V 110 H 10 Z",
         icon: Sofa
       },
@@ -1101,7 +1127,7 @@ const floorPlans: FloorPlan[] = [
         name: "Master Suite",
         area: "380 Sq.Ft",
         description: "The ultimate sanctuary featuring a private balcony, walk-in closet, and spa-like ensuite.",
-        image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=2070&auto=format&fit=crop",
+        image: localImages.galleryD, // Lifestyle scene
         path: "M 190 10 H 290 V 110 H 190 Z",
         icon: Bed
       },
@@ -1110,7 +1136,7 @@ const floorPlans: FloorPlan[] = [
         name: "Gourmet Kitchen",
         area: "220 Sq.Ft",
         description: "State-of-the-art modular kitchen with premium finishes and a dedicated utility area.",
-        image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=2070&auto=format&fit=crop",
+        image: localImages.amenityC, // Modern gym - could represent modern kitchen appliances
         path: "M 10 110 H 110 V 210 H 10 Z",
         icon: Utensils
       },
@@ -1119,7 +1145,7 @@ const floorPlans: FloorPlan[] = [
         name: "Fine Dining",
         area: "180 Sq.Ft",
         description: "Elegant dining space adjacent to the kitchen, perfect for intimate family meals.",
-        image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?q=80&w=2070&auto=format&fit=crop",
+        image: localImages.galleryF, // Community space - could represent dining gatherings
         path: "M 110 110 H 190 V 210 H 110 Z",
         icon: Maximize
       }
@@ -1177,9 +1203,13 @@ const ExitIntentPopup = () => {
             </p>
             
             <div className="flex flex-col md:flex-row gap-6">
-              <button className="px-10 py-5 bg-luxury-gold text-[var(--bg-primary)] text-sm uppercase tracking-[0.3em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm">
+              <a 
+                href="/Ramky-Villa-Pitch-Deck.pdf" 
+                download="Ramky-Villa-Pitch-Deck.pdf"
+                className="px-10 py-5 bg-luxury-gold text-[var(--bg-primary)] text-sm uppercase tracking-[0.3em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm text-center"
+              >
                 Download Brochure
-              </button>
+              </a>
               <button 
                 onClick={() => setIsVisible(false)}
                 className="px-10 py-5 border border-[var(--border-color)] text-[var(--text-primary)] text-xs uppercase tracking-[0.3em] font-bold hover:bg-white/5 transition-all duration-500 rounded-sm"
@@ -1510,19 +1540,19 @@ const Testimonials = () => {
       quote: "Investing in Ramky's Brindavanam was one of the best decisions for our family's future. The scale of the project and the strategic location in the Future City are unmatched.",
       author: "Dr. Arvind Kumar",
       role: "Senior Surgeon",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop"
+      image: localImages.founder
     },
     {
       quote: "The attention to detail in the infrastructure, especially the underground cabling and the wide roads, shows Ramky's commitment to delivering truly world-class living.",
       author: "Priya Sharma",
       role: "Tech Entrepreneur",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1974&auto=format&fit=crop"
+      image: localImages.logo
     },
     {
       quote: "A rare combination of spiritual serenity with the Goshala and modern luxury with the clubhouse. It's exactly the kind of legacy we wanted to build for our children.",
       author: "Rajesh Reddy",
       role: "Industrialist",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1974&auto=format&fit=crop"
+      image: localImages.logoAlt
     }
   ];
 
@@ -1553,7 +1583,7 @@ const FounderSection = () => {
           <Reveal delay={0.2}>
             <div className="relative aspect-[4/5] rounded-sm overflow-hidden group shadow-2xl order-first lg:order-last">
               <img 
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop" 
+                src="/image.png" 
                 alt="Ramakrishna Garagaparthi" 
                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 referrerPolicy="no-referrer"
@@ -1607,7 +1637,7 @@ const ProjectRoadmap = () => {
       description: "Strategic acquisition of 100 acres in the heart of the Future City growth corridor.",
       status: "completed",
       icon: <Target className="w-6 h-6" />,
-      image: "https://images.unsplash.com/photo-1449156001935-d2863fb72690?q=80&w=800"
+      image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=400&q=80" // Land acquisition/development site
     },
     {
       year: "2024",
@@ -1615,7 +1645,7 @@ const ProjectRoadmap = () => {
       description: "Collaboration with global urban designers to create a sustainable, luxury ecosystem.",
       status: "completed",
       icon: <Layers className="w-6 h-6" />,
-      image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=800"
+      image: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&w=400&q=80" // Architectural planning/blueprints
     },
     {
       year: "2025",
@@ -1623,7 +1653,7 @@ const ProjectRoadmap = () => {
       description: "Commencement of 60ft & 40ft internal roads, drainage, and underground cabling.",
       status: "current",
       icon: <Activity className="w-6 h-6" />,
-      image: "https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=800"
+      image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=400&q=80" // Construction site/infrastructure
     },
     {
       year: "2026",
@@ -1631,7 +1661,7 @@ const ProjectRoadmap = () => {
       description: "Grand Clubhouse construction and themed park landscaping in full swing.",
       status: "upcoming",
       icon: <Zap className="w-6 h-6" />,
-      image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=800"
+      image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=400&q=80" // Clubhouse construction
     },
     {
       year: "2027",
@@ -1639,7 +1669,7 @@ const ProjectRoadmap = () => {
       description: "Completion of the 100-acre masterpiece and welcoming the first residents.",
       status: "upcoming",
       icon: <Rocket className="w-6 h-6" />,
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800"
+      image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=400&q=80" // Completed luxury development
     }
   ];
 
@@ -1712,22 +1742,22 @@ const ProjectRoadmap = () => {
 const OnsiteProgress = () => {
   const images = [
     {
-      url: "https://images.unsplash.com/photo-1541888946425-d81bb19480c5?auto=format&fit=crop&q=80&w=800",
+      url: localImages.heroC,
       title: "Main Entrance Arch",
       category: "Infrastructure"
     },
     {
-      url: "https://images.unsplash.com/photo-1503387762-592dee58c160?auto=format&fit=crop&q=80&w=800",
+      url: localImages.galleryA,
       title: "Internal Road Network",
       category: "Roads"
     },
     {
-      url: "https://images.unsplash.com/photo-1590644365607-1c5a519a9a37?auto=format&fit=crop&q=80&w=800",
+      url: localImages.galleryB,
       title: "Clubhouse Foundation",
       category: "Amenities"
     },
     {
-      url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800",
+      url: localImages.galleryC,
       title: "Landscaping Phase 1",
       category: "Parks"
     }
@@ -1885,25 +1915,25 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
               icon={Building2} 
               title="Grand Clubhouse" 
               description="A 50,000 sq.ft. space for social excellence, recreation, and elite networking."
-              image="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=2070&auto=format&fit=crop"
+              image={localImages.amenityA}
             />
             <AmenityCard 
               icon={Trees} 
               title="Themed Parks" 
               description="Meticulously landscaped gardens, Zen zones, and serene walking trails."
-              image="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=2070&auto=format&fit=crop"
+              image={localImages.amenityB}
             />
             <AmenityCard 
               icon={Users} 
               title="Goshala" 
               description="A traditional touch of serenity, sustainable living, and spiritual connection."
-              image="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop"
+              image={localImages.amenityC}
             />
             <AmenityCard 
               icon={Route} 
               title="Wide Roads" 
               description="60ft and 40ft wide internal roads with premium streetscaping and lighting."
-              image="https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=2070&auto=format&fit=crop"
+              image={localImages.amenityD}
             />
           </div>
         </div>
@@ -1918,13 +1948,13 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
               quote="Investing in Ramky Brindavanam was the best decision for our family's future. The vision for the Future City is truly inspiring."
               author="Dr. Arvind Kumar"
               role="Senior Surgeon"
-              image="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop"
+              image={localImages.founder}
             />
             <TestimonialCard 
               quote="The attention to detail in the master plan and the commitment to green spaces is what sets this project apart from everything else."
               author="Sarah D'Souza"
               role="Urban Architect"
-              image="https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?q=80&w=2070&auto=format&fit=crop"
+              image={localImages.logoAlt}
             />
           </div>
         </div>
@@ -1937,7 +1967,7 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
       <section className="py-20 md:py-24 bg-[var(--bg-primary)] relative overflow-hidden">
         <div className="absolute inset-0 opacity-40">
           <img 
-            src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2070&auto=format&fit=crop" 
+            src={localImages.aerial}
             alt="Luxury Real Estate Drone" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -1968,17 +1998,27 @@ const ProjectPage = () => {
     {
       title: "The Grand Entrance",
       desc: "A majestic gateway that reflects the stature of its residents.",
-      image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=2070&auto=format&fit=crop"
+      image: localImages.heroC
     },
     {
       title: "Elite Clubhouse",
       desc: "A 50,000 sq.ft. sanctuary of leisure and social connection.",
-      image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=2070&auto=format&fit=crop"
+      image: localImages.amenityA
     },
     {
       title: "Themed Parks",
       desc: "Lush landscapes designed for serenity and active living.",
-      image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=2070&auto=format&fit=crop"
+      image: localImages.amenityD
+    },
+    {
+      title: "Villa Floor Plans",
+      desc: "Detailed 2D blueprints showcasing premium villa layouts and spatial design.",
+      image: localImages.blueprintA
+    },
+    {
+      title: "Master Layout Design",
+      desc: "Comprehensive architectural plans illustrating the complete project layout.",
+      image: localImages.blueprintB
     }
   ];
 
@@ -1989,7 +2029,7 @@ const ProjectPage = () => {
         <div className="container mx-auto px-6">
           <SectionHeading title="Experience Your Space" subtitle="Immersive Living" />
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {categories.map((cat, i) => (
               <motion.div
                 key={i}
@@ -2042,31 +2082,33 @@ const AboutPage = () => {
             className="aspect-[4/5] rounded-sm overflow-hidden shadow-2xl"
           >
             <img 
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop" 
+              src="/image.png" 
               alt="Ramakrishna Garagaparthi" 
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-[5s]"
               referrerPolicy="no-referrer"
             />
           </motion.div>
-          <Reveal>
-            <h3 className="text-3xl md:text-5xl font-serif mb-8 text-luxury-gold tracking-tight">A Journey of Passion & Purpose</h3>
-            <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-6 font-light">
-              Garagaparthi Ramakrishna, popularly known as Ramky, is an Indian film actor and businessman. He started his career with the movie "Gangaputhrulu," earning the prestigious Nandi Award for Best Debut Hero in 2010.
-            </p>
-            <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-6 font-light">
-              Beyond cinema, he established GRK Films and produced meaningful films like "Journalist," highlighting the impact of media in politics. His entrepreneurial spirit led him to found Ramky Infra & Developers Pvt Ltd, where he focuses on delivering high-quality, affordable housing.
-            </p>
-            <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-10 font-light">
-              Ramky is also a dedicated social activist, contributing to Titli cyclone relief, Pulwama attack vigils, and Hyderabad flood relief. He serves as a member of the Disciplinary Committee in the Film Chamber, upholding ethical standards in the industry.
-            </p>
-            <div className="grid grid-cols-2 gap-8">
-              <div>
-                <h4 className="text-3xl font-serif text-luxury-gold mb-1">Nandi Award</h4>
-                <p className="text-[var(--text-secondary)] uppercase tracking-[0.2em] text-[10px] font-bold opacity-60">Best Debut Hero (2010)</p>
-              </div>
-              <div>
-                <h4 className="text-3xl font-serif text-luxury-gold mb-1">GRK Films</h4>
-                <p className="text-[var(--text-secondary)] uppercase tracking-[0.2em] text-[10px] font-bold opacity-60">Production House</p>
+          <Reveal width="100%">
+            <div className="max-w-2xl mx-auto text-center">
+              <h3 className="text-3xl md:text-5xl font-serif mb-8 text-luxury-gold tracking-tight">A Journey of Passion & Purpose</h3>
+              <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-6 font-light">
+                Garagaparthi Ramakrishna, popularly known as Ramky, is an Indian film actor and businessman. He started his career with the movie "Gangaputhrulu," earning the prestigious Nandi Award for Best Debut Hero in 2010.
+              </p>
+              <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-6 font-light">
+                Beyond cinema, he established GRK Films and produced meaningful films like "Journalist," highlighting the impact of media in politics. His entrepreneurial spirit led him to found Ramky Infra & Developers Pvt Ltd, where he focuses on delivering high-quality, affordable housing.
+              </p>
+              <p className="text-[var(--text-secondary)] text-lg leading-relaxed mb-10 font-light">
+                Ramky is also a dedicated social activist, contributing to Titli cyclone relief, Pulwama attack vigils, and Hyderabad flood relief. He serves as a member of the Disciplinary Committee in the Film Chamber, upholding ethical standards in the industry.
+              </p>
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <h4 className="text-3xl font-serif text-luxury-gold mb-1">Nandi Award</h4>
+                  <p className="text-[var(--text-secondary)] uppercase tracking-[0.2em] text-[10px] font-bold opacity-60">Best Debut Hero (2010)</p>
+                </div>
+                <div>
+                  <h4 className="text-3xl font-serif text-luxury-gold mb-1">GRK Films</h4>
+                  <p className="text-[var(--text-secondary)] uppercase tracking-[0.2em] text-[10px] font-bold opacity-60">Production House</p>
+                </div>
               </div>
             </div>
           </Reveal>
@@ -2120,19 +2162,25 @@ const AboutPage = () => {
 
 const GalleryPage = () => {
   const images = [
-    { url: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=2070&auto=format&fit=crop", cat: "Layout" },
-    { url: "https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?q=80&w=2070&auto=format&fit=crop", cat: "Development" },
-    { url: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=2070&auto=format&fit=crop", cat: "Lifestyle" },
-    { url: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?q=80&w=2070&auto=format&fit=crop", cat: "Layout" },
-    { url: "https://images.unsplash.com/photo-1600585154526-990dcea4db0d?q=80&w=2070&auto=format&fit=crop", cat: "Development" },
-    { url: "https://images.unsplash.com/photo-1600607687940-467f5b637a53?q=80&w=2070&auto=format&fit=crop", cat: "Lifestyle" },
+    { url: localImages.galleryA, cat: "Layout" },
+    { url: localImages.galleryB, cat: "Development" },
+    { url: localImages.galleryC, cat: "Lifestyle" },
+    { url: localImages.galleryD, cat: "Layout" },
+    { url: localImages.galleryE, cat: "Development" },
+    { url: "/image 1.png", cat: "Amenity" },
+    { url: "/image 3.png", cat: "Infrastructure" },
+    { url: "/image 11.png", cat: "Exterior" },
+    { url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80", cat: "Architecture" },
+    { url: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80", cat: "Interiors" },
+    { url: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80", cat: "Night View" },
+    { url: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80", cat: "Community" },
   ];
 
   return (
     <main className="pt-32 md:pt-48 pb-24 md:pb-32 bg-[var(--bg-primary)]">
       <div className="container mx-auto px-6">
         <SectionHeading title="Visual Journey" subtitle="Gallery" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">
           {images.map((img, i) => (
             <motion.div
               key={i}
@@ -2169,7 +2217,7 @@ const BlogPage = () => {
       title: "The Future of Sustainable Living in Hyderabad",
       excerpt: "Discover how Ramky's Brindavanam is setting new standards for eco-friendly infrastructure and green living spaces.",
       date: "March 28, 2026",
-      image: "https://images.unsplash.com/photo-1518005020250-6859b2827c17?q=80&w=2070&auto=format&fit=crop",
+      image: localImages.galleryD,
       category: "Sustainability"
     },
     {
@@ -2177,7 +2225,7 @@ const BlogPage = () => {
       title: "Investment Opportunities in the Future City",
       excerpt: "Why the upcoming Future City corridor is the most promising real estate investment in Southern India today.",
       date: "April 02, 2026",
-      image: "https://images.unsplash.com/photo-1460472178825-e525062995c2?q=80&w=2070&auto=format&fit=crop",
+      image: localImages.aerial,
       category: "Investment"
     },
     {
@@ -2185,7 +2233,7 @@ const BlogPage = () => {
       title: "Modern Amenities: Redefining Luxury",
       excerpt: "A deep dive into the world-class amenities at Brindavanam, from the infinity pool to the organic community gardens.",
       date: "April 05, 2026",
-      image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=2070&auto=format&fit=crop",
+      image: localImages.amenityA,
       category: "Lifestyle"
     }
   ];
@@ -2272,7 +2320,7 @@ const ContactPage = () => {
                 </div>
                 <div>
                   <h4 className="text-lg font-serif mb-1 tracking-tight text-[var(--text-primary)]">Corporate Office</h4>
-                  <p className="text-[var(--text-secondary)] text-base font-light">Ramky Towers, Gachibowli, Hyderabad, 500032</p>
+                  <p className="text-[var(--text-secondary)] text-base font-light">KVR Holdings, Plot # 715, Road #36, Opp. TATA Croma,<br />Jubilee Hills, Hyderabad, Telangana - 500033</p>
                 </div>
               </div>
               <div className="flex items-start space-x-6 group">
@@ -2281,7 +2329,7 @@ const ContactPage = () => {
                 </div>
                 <div>
                   <h4 className="text-lg font-serif mb-1 tracking-tight text-[var(--text-primary)]">Direct Line</h4>
-                  <p className="text-[var(--text-secondary)] text-base font-light">+91 98765 43210</p>
+                  <p className="text-[var(--text-secondary)] text-base font-light">+91 9966858799</p>
                 </div>
               </div>
               <div className="flex items-start space-x-6 group">
@@ -2290,19 +2338,19 @@ const ContactPage = () => {
                 </div>
                 <div>
                   <h4 className="text-lg font-serif mb-1 tracking-tight text-[var(--text-primary)]">Email Us</h4>
-                  <p className="text-[var(--text-secondary)] text-base font-light">sales@ramkyinfra.com</p>
+                  <p className="text-[var(--text-secondary)] text-base font-light">ramkyinfra3999@gmail.com</p>
                 </div>
               </div>
             </div>
             <div className="h-80 w-full rounded-sm overflow-hidden grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-1000 shadow-2xl border border-[var(--border-color)]">
               <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.827222661234!2d78.306447314877!3d17.420042988059!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb93f1f1f1f1f1%3A0x1f1f1f1f1f1f1f1f!2sHyderabad%2C%20Telangana!5e0!3m2!1sen!2sin!4v1625123456789!5m2!1sen!2sin" 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.827222661234!2d78.4161!3d17.3850!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTfCsDIzJzA2LjAiTiA3OMKwMjQnNTYuNiJF!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin&q=KVR+Holdings,+Plot+715,+Road+36,+Opp+TATA+Croma,+Jubilee+Hills,+Hyderabad,+Telangana+500033" 
                 width="100%" 
                 height="100%" 
                 style={{ border: 0 }} 
                 allowFullScreen={true} 
                 loading="lazy"
-                title="Map"
+                title="Office Location"
               ></iframe>
             </div>
           </Reveal>
@@ -2457,9 +2505,11 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
           <div className="col-span-1 lg:col-span-1">
             <div className="flex items-center space-x-3 mb-8">
-              <div className="w-10 h-10 bg-luxury-gold flex items-center justify-center rounded-sm">
-                <span className="text-[var(--bg-primary)] font-serif font-bold text-xl">R</span>
-              </div>
+              <img
+                src={localImages.logo}
+                alt="Ramky logo"
+                className="w-10 h-10 rounded-sm object-cover"
+              />
               <span className="text-2xl font-serif font-bold tracking-tighter text-[var(--text-primary)]">RAMKY</span>
             </div>
             <p className="text-[var(--text-secondary)] text-sm leading-relaxed font-light mb-8">
