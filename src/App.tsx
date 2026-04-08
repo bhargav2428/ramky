@@ -805,6 +805,20 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
+  const handleEnquireNow = () => {
+    const whatsappMessage = `*New Inquiry - Ramky Brindavanam*
+
+🏢 *Project:* Ramky Brindavanam
+📍 *Location:* Jubilee Hills, Hyderabad
+
+*I'm interested in learning more about this project. Please share details.*
+
+*Sent via Website Enquire Now button*`;
+
+    const whatsappUrl = `https://wa.me/919966858799?text=${encodeURIComponent(whatsappMessage)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
@@ -865,7 +879,7 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
           </button>
 
           <button 
-            onClick={() => setActivePage('contact')}
+            onClick={handleEnquireNow}
             className="px-6 py-2 bg-luxury-gold text-[var(--bg-primary)] text-[10px] uppercase tracking-widest font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-500 rounded-sm"
           >
             Enquire Now
@@ -905,7 +919,7 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
               </button>
             ))}
             <button 
-              onClick={() => { setActivePage('contact'); setIsMobileMenuOpen(false); }}
+              onClick={() => { handleEnquireNow(); setIsMobileMenuOpen(false); }}
               className="w-full py-4 bg-luxury-gold text-[var(--bg-primary)] text-sm uppercase tracking-widest font-bold"
             >
               Enquire Now
@@ -1837,9 +1851,23 @@ const FullWidthMap = () => {
 // --- Page Content ---
 
 const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
+  const handleEnquireNow = () => {
+    const whatsappMessage = `*New Inquiry - Ramky Brindavanam*
+
+🏢 *Project:* Ramky Brindavanam
+📍 *Location:* Jubilee Hills, Hyderabad
+
+*I'm interested in scheduling a site visit. Please share availability and details.*
+
+*Sent via Website CTA button*`;
+
+    const whatsappUrl = `https://wa.me/919966858799?text=${encodeURIComponent(whatsappMessage)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <main>
-      <Hero onCtaClick={() => setActivePage('contact')} />
+      <Hero onCtaClick={handleEnquireNow} />
 
       {/* Prestige Statement */}
       <section className="py-16 md:py-20 bg-[var(--bg-primary)] relative overflow-hidden">
@@ -2318,31 +2346,8 @@ const ContactPage = () => {
       return;
     }
 
-    try {
-      // Store inquiry data in Google Sheets
-      const inquiryData = {
-        name,
-        phone,
-        email,
-        message,
-        timestamp: new Date().toISOString(),
-        source: 'Website Contact Form'
-      };
-
-      // Replace with your Google Apps Script web app URL
-      const scriptUrl = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
-
-      await fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(inquiryData)
-      });
-
-      // Create WhatsApp message
-      const whatsappMessage = `*New Inquiry - Ramky Brindavanam*
+    // Create WhatsApp message
+    const whatsappMessage = `*New Inquiry - Ramky Brindavanam*
 
 👤 *Name:* ${name}
 📞 *Phone:* ${phone}
@@ -2354,15 +2359,15 @@ const ContactPage = () => {
 
 *Sent via Website Contact Form*`;
 
-      // WhatsApp URL
-      const whatsappUrl = `https://wa.me/919966858799?text=${encodeURIComponent(whatsappMessage)}`;
+    // WhatsApp URL
+    const whatsappUrl = `https://wa.me/919966858799?text=${encodeURIComponent(whatsappMessage)}`;
 
-      // Open WhatsApp
-      window.open(whatsappUrl, '_blank');
+    // Open WhatsApp
+    window.open(whatsappUrl, '_blank');
 
-      // Also send email as backup
-      const emailSubject = `New Inquiry - Ramky Brindavanam from ${name}`;
-      const emailBody = `New inquiry received:
+    // Also send email as backup
+    const emailSubject = `New Inquiry - Ramky Brindavanam from ${name}`;
+    const emailBody = `New inquiry received:
 
 Name: ${name}
 Phone: ${phone}
@@ -2374,27 +2379,23 @@ Location: Jubilee Hills, Hyderabad
 
 Sent via website contact form on ${new Date().toLocaleString()}`;
 
-      const emailUrl = `mailto:ramkyinfra3999@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    const emailUrl = `mailto:ramkyinfra3999@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
 
-      // Open email client as backup
-      setTimeout(() => {
-        window.open(emailUrl, '_blank');
-      }, 1000);
+    // Open email client as backup
+    setTimeout(() => {
+      window.open(emailUrl, '_blank');
+    }, 1000);
 
-      // Reset form
-      if (nameRef.current) nameRef.current.value = '';
-      if (phoneRef.current) phoneRef.current.value = '';
-      if (emailRef.current) emailRef.current.value = '';
-      if (messageRef.current) messageRef.current.value = '';
-
-      alert('Thank you! Your inquiry has been stored and sent via WhatsApp and email. We will get back to you soon!');
-
-    } catch (error) {
-      console.error('Error storing inquiry:', error);
-      alert('There was an error storing your inquiry, but we\'ve sent it via WhatsApp and email. Please try again later.');
-    }
+    // Reset form
+    if (nameRef.current) nameRef.current.value = '';
+    if (phoneRef.current) phoneRef.current.value = '';
+    if (emailRef.current) emailRef.current.value = '';
+    if (messageRef.current) messageRef.current.value = '';
 
     setIsSubmitting(false);
+
+    // Show success message
+    alert('Thank you! Your inquiry has been sent via WhatsApp and email. We will get back to you soon!');
   };
 
   return (
