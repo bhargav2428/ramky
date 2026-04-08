@@ -121,8 +121,8 @@ const localImages = {
   logo: "/image 12.png",
   logoAlt: "/image 12 copy.png",
   founder: "/image.png",
-  heroA: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80", // Luxury villa exterior for "The Pinnacle of Living"
-  heroB: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1200&q=80", // Modern city skyline for "Strategic Investment"
+  heroA: "DJI_0171 (1).JPG", // Luxury villa exterior for "The Pinnacle of Living"
+  heroB: "DSC05019 (1) 1.png", // Modern city skyline for "Strategic Investment"
   heroC: "/9.Arch Brindavanam (1) 1.png",
   aerial: "/DJI_0171 (1).JPG",
   masterPlan: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80", // Architectural master plan layout
@@ -355,7 +355,7 @@ const LoadingScreen = () => {
           <img
             src={localImages.logo}
             alt="Ramky Brindavanam logo"
-            className="w-20 h-20 rounded-sm object-cover shadow-2xl"
+            className="w-32 h-32 rounded-sm object-contain shadow-2xl"
           />
         </motion.div>
         
@@ -830,7 +830,7 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
           <img
             src={localImages.logo}
             alt="Ramky logo"
-            className="w-32 h-20 rounded-sm object-cover mr-4 group-hover:scale-110 transition-transform duration-500"
+            className="w-32 h-24 rounded-sm object-contain mr-4 group-hover:scale-110 transition-transform duration-500"
           />
           {/* <div className="relative">
             <span className="text-2xl md:text-3xl font-serif font-bold tracking-tighter text-luxury-gold group-hover:text-[var(--text-primary)] transition-colors">RAMKY</span>
@@ -928,13 +928,13 @@ const Hero = ({ onCtaClick }: { onCtaClick: () => void }) => {
       desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
     },
     {
-      image: "/image 1.png",
+      image: localImages.heroB,
       title: "Future City Growth",
       subtitle: "Strategic Investment",
       desc: "Positioned at the epicenter of Hyderabad's next global growth engine with massive appreciation potential."
     },
     {
-      image: "/image 3.png",
+      image: localImages.heroC,
       title: "Architectural Marvel",
       subtitle: "Modern Infrastructure",
       desc: "Experience world-class amenities and futuristic design that redefines urban luxury living."
@@ -1546,13 +1546,13 @@ const Testimonials = () => {
       quote: "The attention to detail in the infrastructure, especially the underground cabling and the wide roads, shows Ramky's commitment to delivering truly world-class living.",
       author: "Priya Sharma",
       role: "Tech Entrepreneur",
-      image: localImages.logo
+      image: "/image 1.png"
     },
     {
       quote: "A rare combination of spiritual serenity with the Goshala and modern luxury with the clubhouse. It's exactly the kind of legacy we wanted to build for our children.",
       author: "Rajesh Reddy",
       role: "Industrialist",
-      image: localImages.logoAlt
+      image: "/image 3.png"
     }
   ];
 
@@ -1945,16 +1945,10 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
           <SectionHeading title="Voices of Trust" subtitle="Client Testimonials" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <TestimonialCard 
-              quote="Investing in Ramky Brindavanam was the best decision for our family's future. The vision for the Future City is truly inspiring."
-              author="Dr. Arvind Kumar"
-              role="Senior Surgeon"
-              image={localImages.founder}
-            />
-            <TestimonialCard 
               quote="The attention to detail in the master plan and the commitment to green spaces is what sets this project apart from everything else."
               author="Sarah D'Souza"
               role="Urban Architect"
-              image={localImages.logoAlt}
+              image="/image 5.png"
             />
           </div>
         </div>
@@ -2508,7 +2502,7 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
               <img
                 src={localImages.logo}
                 alt="Ramky logo"
-                className="w-10 h-10 rounded-sm object-cover"
+                className="w-12 h-12 rounded-sm object-contain"
               />
               <span className="text-2xl font-serif font-bold tracking-tighter text-[var(--text-primary)]">RAMKY</span>
             </div>
@@ -2567,15 +2561,15 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
             <ul className="space-y-4 text-[var(--text-secondary)] text-sm font-light">
               <li className="flex items-start space-x-4">
                 <MapPin size={18} className="text-luxury-gold shrink-0 mt-1" />
-                <span>Ramky Towers, Gachibowli, Hyderabad, 500032</span>
+                <span>KVR Holdings, Plot # 715, Road #36, Opp. TATA Croma,<br />Jubilee Hills, Hyderabad, Telangana - 500033</span>
               </li>
               <li className="flex items-center space-x-4">
                 <Phone size={18} className="text-luxury-gold shrink-0" />
-                <span>+91 98765 43210</span>
+                <span>+91 9966858799</span>
               </li>
               <li className="flex items-center space-x-4">
                 <Mail size={18} className="text-luxury-gold shrink-0" />
-                <span>sales@ramkyinfra.com</span>
+                <span>ramkyinfra3999@gmail.com</span>
               </li>
             </ul>
           </div>
