@@ -2297,7 +2297,78 @@ const BlogPage = () => {
 };
 
 const ContactPage = () => {
-  return (
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const messageRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleInquirySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const name = nameRef.current?.value;
+    const phone = phoneRef.current?.value;
+    const email = emailRef.current?.value;
+    const message = messageRef.current?.value;
+
+    if (!name || !phone || !email || !message) {
+      alert('Please fill in all fields');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Create WhatsApp message
+    const whatsappMessage = `*New Inquiry - Ramky Brindavanam*
+
+👤 *Name:* ${name}
+📞 *Phone:* ${phone}
+📧 *Email:* ${email}
+💬 *Message:* ${message}
+
+🏢 *Project:* Ramky Brindavanam
+📍 *Location:* Jubilee Hills, Hyderabad
+
+*Sent via Website Contact Form*`;
+
+    // WhatsApp URL (replace with your actual WhatsApp number)
+    const whatsappUrl = `https://wa.me/919966858799?text=${encodeURIComponent(whatsappMessage)}`;
+
+    // Open WhatsApp
+    window.open(whatsappUrl, '_blank');
+
+    // Also send email as backup
+    const emailSubject = `New Inquiry - Ramky Brindavanam from ${name}`;
+    const emailBody = `New inquiry received:
+
+Name: ${name}
+Phone: ${phone}
+Email: ${email}
+Message: ${message}
+
+Project: Ramky Brindavanam
+Location: Jubilee Hills, Hyderabad
+
+Sent via website contact form on ${new Date().toLocaleString()}`;
+
+    const emailUrl = `mailto:ramkyinfra3999@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+    // Open email client as backup
+    setTimeout(() => {
+      window.open(emailUrl, '_blank');
+    }, 1000);
+
+    // Reset form
+    if (nameRef.current) nameRef.current.value = '';
+    if (phoneRef.current) phoneRef.current.value = '';
+    if (emailRef.current) emailRef.current.value = '';
+    if (messageRef.current) messageRef.current.value = '';
+
+    setIsSubmitting(false);
+
+    // Show success message
+    alert('Thank you! Your inquiry has been sent via WhatsApp and email. We will get back to you soon!');
+  };
     <main className="pt-32 md:pt-48 pb-24 md:pb-32 bg-[var(--bg-primary)]">
       <div className="container mx-auto px-6">
         <SectionHeading title="Book Your Site Visit" subtitle="Get in Touch" />
@@ -2357,27 +2428,55 @@ const ContactPage = () => {
             className="glass-card p-10 md:p-16 rounded-sm shadow-2xl border border-[var(--border-color)]"
           >
             <h4 className="text-2xl md:text-3xl font-serif mb-10 tracking-tight text-[var(--text-primary)]">Inquiry Form</h4>
-            <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-8" onSubmit={handleInquirySubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold">Full Name</label>
-                  <input type="text" placeholder="John Doe" className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light" />
+                  <input
+                    ref={nameRef}
+                    type="text"
+                    placeholder="John Doe"
+                    className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light"
+                    required
+                  />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold">Phone Number</label>
-                  <input type="tel" placeholder="+91 00000 00000" className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light" />
+                  <input
+                    ref={phoneRef}
+                    type="tel"
+                    placeholder="+91 00000 00000"
+                    className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light"
+                    required
+                  />
                 </div>
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold">Email Address</label>
-                <input type="email" placeholder="john@example.com" className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light" />
+                <input
+                  ref={emailRef}
+                  type="email"
+                  placeholder="john@example.com"
+                  className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] text-base font-light"
+                  required
+                />
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] uppercase tracking-[0.4em] text-luxury-gold font-bold">Message</label>
-                <textarea rows={3} placeholder="I'm interested in..." className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] resize-none text-base font-light"></textarea>
+                <textarea
+                  ref={messageRef}
+                  rows={3}
+                  placeholder="I'm interested in..."
+                  className="w-full bg-transparent border-b border-[var(--border-color)] py-3 focus:border-luxury-gold outline-none transition-colors text-[var(--text-primary)] resize-none text-base font-light"
+                  required
+                ></textarea>
               </div>
-              <button className="w-full py-6 bg-luxury-gold text-luxury-black text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm shadow-xl shadow-luxury-gold/20">
-                Book Site Visit Now
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-6 bg-luxury-gold text-luxury-black text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm shadow-xl shadow-luxury-gold/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Sending...' : 'Book Site Visit Now'}
               </button>
             </form>
           </motion.div>
