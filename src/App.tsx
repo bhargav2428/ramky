@@ -1993,6 +1993,7 @@ const PartnersSection = () => {
         "DAMAC is showcased as a premium international partner brand known for luxury residential, commercial, and lifestyle developments.",
       highlights: ["Luxury Real Estate", "Dubai", "Global Presence"],
       image: localImages.heroA,
+      href: "https://promotions.damacproperties.com/ind/dubai-properties/?goal=leadgen&digital_source=search-gsn&channelcluster=pull&keyword=damac&ad_id=793051136548&matchtype=e&network=g&utm_source=google&utm_medium=paid-search&utm_campaign=AEI-%7C-Performance-%7C-Brand-Pure-%7C.Dig-Search-Goog-IND-ND-ENG-Jul13&bidtype=cpc&campaign_id=a120700000KLrxi&gad_source=1&gad_campaignid=20406585316&gbraid=0AAAAADnwM7Vjr2_Oy4mWt-ifOde7C96LH&gclid=CjwKCAjw-dfOBhAjEiwAq0RwI9NWQDECxbXhHrOZGZPI7WBlCuFPLr84xrhhDnVfwX2yIL0rlGcVrBoCqogQAvD_BwE",
     },
   ];
 
@@ -2010,13 +2011,16 @@ const PartnersSection = () => {
 
         <div className="grid grid-cols-1 gap-10 max-w-5xl mx-auto">
           {partners.map((partner) => (
-            <motion.div
+            <motion.a
               key={partner.name}
+              href={partner.href}
+              target="_blank"
+              rel="noopener noreferrer"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden rounded-sm border border-luxury-gold/20 bg-[var(--bg-primary)] shadow-2xl"
+              className="overflow-hidden rounded-sm border border-luxury-gold/20 bg-[var(--bg-primary)] shadow-2xl block cursor-pointer hover:border-luxury-gold/50 transition-colors"
             >
               <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr]">
                 <div className="relative min-h-[280px] lg:min-h-full">
@@ -2051,7 +2055,7 @@ const PartnersSection = () => {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </motion.a>
           ))}
         </div>
       </div>
