@@ -60,6 +60,9 @@ import {
   Send
 } from "lucide-react";
 import { useState, useEffect, useRef, ReactNode, createContext, useContext } from "react";
+import { on } from "events";
+import { gain } from "three/tsl";
+import { g } from "motion/react-client";
 
 // --- Types ---
 type Page = 'home' | 'project' | 'about' | 'gallery' | 'contact' | 'blogs';
@@ -121,23 +124,44 @@ const localImages = {
   logo: "/image 12.png",
   logoAlt: "/image 12 copy.png",
   founder: "/image.png",
-  heroA: "DJI_0171 (1).JPG", // Luxury villa exterior for "The Pinnacle of Living"
-  heroB: "DSC05019 (1) 1.png", // Modern city skyline for "Strategic Investment"
+  heroA: "/DJI_0171 (1).JPG", // Luxury villa exterior for "The Pinnacle of Living"
+  heroB: "/DSC05019 (1) 1.png", // Modern city skyline for "Strategic Investment"
   heroC: "/9.Arch Brindavanam (1) 1.png",
   aerial: "/DJI_0171 (1).JPG",
-  masterPlan: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80", // Architectural master plan layout
-  amenityA: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80", // Luxury clubhouse interior
-  amenityB: "https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=800&q=80", // Infinity swimming pool
-  amenityC: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80", // Modern fitness gym
-  amenityD: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80", // Beautiful landscaped park
-  galleryA: "/image 6.png", // Layout image 1
-  galleryB: "/image 7.png", // Layout image 2
-  galleryC: "/image 8.png", // Layout image 3
-  galleryD: "/image 9.png", // Layout image 4
-  galleryE: "/image 10.png", // Layout image 5
-  galleryF: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80", // Community gathering space
+  masterPlan: "/Group 3.png", // Architectural master plan layout
+  amenityA: "/WhatsApp Image 2026-04-08 at 21.53.02.jpeg", // Luxury clubhouse interior
+  amenityB: "/WhatsApp Image 2026-04-08 at 21.53.01 (1).jpeg", // Infinity swimming pool
+  amenityC: "/WhatsApp Image 2026-04-08 at 21.53.02 (1).jpeg", // Modern fitness gym
+  amenityD: "/WhatsApp Image 2026-04-08 at 21.53.01.jpeg", // Beautiful landscaped park
+  galleryA: "/WhatsApp Image 2026-04-08 at 21.52.57 (1).jpeg", // Layout image 1
+  galleryB: "/WhatsApp Image 2026-04-08 at 21.52.57.jpeg", // Layout image 2
+  galleryC: "/WhatsApp Image 2026-04-08 at 21.52.58 (1).jpeg", // Layout image 3
+  galleryD: "/WhatsApp Image 2026-04-08 at 21.52.58.jpeg", // Layout image 4
+  galleryE: "/WhatsApp Image 2026-04-08 at 21.53.08 (3).jpeg", // Layout image 5
+  galleryF: "/WhatsApp Image 2026-04-08 at 21.53.08.jpeg",
+  galleryG: "/WhatsApp Image 2026-04-08 at 21.53.09 (1).jpeg",
+  galleryH: "/WhatsApp Image 2026-04-08 at 21.53.09.jpeg",
+  galleryI: "/WhatsApp Image 2026-04-08 at 21.53.06 (1).jpeg",
+  galleryJ: "/WhatsApp Image 2026-04-08 at 21.53.06 (2).jpeg",
+  galleryK: "/WhatsApp Image 2026-04-08 at 21.53.06.jpeg",
+  galleryL: "/WhatsApp Image 2026-04-08 at 21.53.07 (1).jpeg",
+  galleryM: "/WhatsApp Image 2026-04-08 at 21.53.07.jpeg",
+  galleryN: "/WhatsApp Image 2026-04-08 at 21.53.08 (1).jpeg",
+  galleryO: "/WhatsApp Image 2026-04-08 at 21.53.08 (2).jpeg",
   blueprintA: "/image 4.png", // 2D Blueprint 1
   blueprintB: "/image 5.png", // 2D Blueprint 2
+  onsiteA: "/WhatsApp Image 2026-04-08 at 21.52.57 (1).jpeg", // Construction site image 1
+  onsiteB: "/WhatsApp Image 2026-04-08 at 21.52.57.jpeg", // Construction site image 2
+  onsiteC: "/WhatsApp Image 2026-04-08 at 21.52.58 (1).jpeg", // Construction site image 3
+  onsiteD: "/WhatsApp Image 2026-04-08 at 21.52.58.jpeg", // Construction site image 4
+
+} as const;
+
+const socialLinks = {
+  linkedin: "https://www.linkedin.com/in/ramky-infra-and-developers-086963350",
+  instagram: "https://www.instagram.com/ramky.infra?igsh=NHRweTR5NHVlZDR3",
+  facebook: "https://www.facebook.com/share/1CHcBKKPHY/",
+  officeMap: "https://maps.app.goo.gl/AjnqNqRDtCa9SmRL8?g_st=aw",
 } as const;
 
 // --- 3D Components ---
@@ -413,12 +437,12 @@ const HeroCarousel = ({ onCtaClick }: { onCtaClick: () => void }) => {
       subtitle: "Ramky’s Brindavanam",
       desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
     },
-    {
-      image: localImages.heroB,
-      title: "Strategic Investment",
-      subtitle: "Future City Growth",
-      desc: "Positioned in the 4th Growth Zone of Hyderabad, ensuring unparalleled appreciation and ROI."
-    },
+    // {
+    //   image: localImages.heroB,
+    //   title: "Strategic Investment",
+    //   subtitle: "Future City Growth",
+    //   desc: "Positioned in the 4th Growth Zone of Hyderabad, ensuring unparalleled appreciation and ROI."
+    // },
     {
       image: localImages.heroC,
       title: "Architectural Excellence",
@@ -1756,22 +1780,22 @@ const ProjectRoadmap = () => {
 const OnsiteProgress = () => {
   const images = [
     {
-      url: localImages.heroC,
+      url: localImages.onsiteA,
       title: "Main Entrance Arch",
       category: "Infrastructure"
     },
     {
-      url: localImages.galleryA,
+      url: localImages.onsiteB,
       title: "Internal Road Network",
       category: "Roads"
     },
     {
-      url: localImages.galleryB,
+      url: localImages.onsiteC,
       title: "Clubhouse Foundation",
       category: "Amenities"
     },
     {
-      url: localImages.galleryC,
+      url: localImages.onsiteD,
       title: "Landscaping Phase 1",
       category: "Parks"
     }
@@ -1816,7 +1840,7 @@ const FullWidthMap = () => {
     <section className="w-full h-[500px] relative bg-[var(--bg-primary)] overflow-hidden">
       <div className="absolute inset-0 grayscale opacity-50 hover:grayscale-0 transition-all duration-1000">
         <iframe 
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3814.789123456789!2d78.456789!3d17.123456!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTfCsDA3JzI0LjQiTiA3OMKwMjcnMjQuNCJF!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin" 
+          src="https://www.google.com/maps?q=KVR%20Holdings%2C%20Plot%20715%2C%20Road%2036%2C%20Opp%20TATA%20Croma%2C%20Jubilee%20Hills%2C%20Hyderabad%2C%20Telangana%20500033&output=embed" 
           width="100%" 
           height="100%" 
           style={{ border: 0 }} 
@@ -1840,9 +1864,86 @@ const FullWidthMap = () => {
           </p>
           <div className="flex items-center gap-4 text-xs text-luxury-gold uppercase tracking-widest">
             <MapPin size={16} />
-            <span>Mucherla, Hyderabad</span>
+            <a href={socialLinks.officeMap} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              Open Correct Location
+            </a>
           </div>
         </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const PartnersSection = () => {
+  const partners = [
+    {
+      name: "DAMAC Properties",
+      label: "International Real Estate Partner",
+      summary:
+        "DAMAC is showcased as a premium international partner brand known for luxury residential, commercial, and lifestyle developments.",
+      highlights: ["Luxury Real Estate", "Dubai", "Global Presence"],
+      image: localImages.heroA,
+    },
+  ];
+
+  return (
+    <section className="py-24 md:py-32 bg-[var(--bg-secondary)] relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid-pattern opacity-15 pointer-events-none" />
+      <div className="container mx-auto px-6 relative z-10">
+        <SectionHeading title="Our Partners" subtitle="Trusted Collaborations" />
+
+        <div className="max-w-3xl mx-auto mb-14 text-center">
+          <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
+            We collaborate with distinguished brands that reflect quality, ambition, and long-term value. DAMAC is presented here as a featured international partner.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-10 max-w-5xl mx-auto">
+          {partners.map((partner) => (
+            <motion.div
+              key={partner.name}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden rounded-sm border border-luxury-gold/20 bg-[var(--bg-primary)] shadow-2xl"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr]">
+                <div className="relative min-h-[280px] lg:min-h-full">
+                  <img
+                    src={partner.image}
+                    alt={partner.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-black/60" />
+                </div>
+
+                <div className="p-8 md:p-10 text-left flex flex-col justify-center">
+                  <span className="text-luxury-gold text-[10px] uppercase tracking-[0.45em] font-bold mb-4 block">
+                    {partner.label}
+                  </span>
+                  <h3 className="text-4xl md:text-5xl font-serif tracking-tight mb-5 text-left text-[var(--text-primary)]">
+                    {partner.name}
+                  </h3>
+                  <p className="text-[var(--text-secondary)] text-base md:text-lg leading-relaxed text-left mb-8">
+                    {partner.summary}
+                  </p>
+
+                  <div className="flex flex-wrap gap-3">
+                    {partner.highlights.map((item) => (
+                      <span
+                        key={item}
+                        className="px-4 py-2 border border-[var(--border-color)] rounded-full text-[10px] uppercase tracking-[0.25em] text-luxury-gold"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -1982,6 +2083,8 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
         </div>
       </section>
 
+      <PartnersSection />
+
       {/* Full Width Map Section */}
       <FullWidthMap />
 
@@ -2059,20 +2162,20 @@ const ProjectPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 1, delay: i * 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="group relative aspect-[3/4] overflow-hidden rounded-sm cursor-pointer"
+                className="group relative overflow-hidden rounded-sm cursor-pointer bg-[var(--bg-secondary)] border border-[var(--border-color)]"
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)] via-[var(--bg-primary)]/20 to-transparent z-10 opacity-60 group-hover:opacity-80 transition-opacity duration-700"></div>
-                <img 
-                  src={cat.image} 
-                  alt={cat.title} 
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 border border-[var(--border-color)] group-hover:border-luxury-gold/30 transition-all duration-700 z-20"></div>
-                
-                <div className="absolute bottom-0 left-0 w-full p-10 z-30 transform translate-y-8 group-hover:translate-y-0 transition-transform duration-700">
+                <div className="relative aspect-[16/10] bg-[var(--bg-primary)]/40 flex items-start justify-center p-4 md:p-5 overflow-hidden">
+                  <img 
+                    src={cat.image} 
+                    alt={cat.title} 
+                    className="w-full h-full object-contain object-top"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                <div className="p-8 md:p-10 border-t border-[var(--border-color)] group-hover:border-luxury-gold/30 transition-colors duration-700">
                   <h4 className="text-3xl font-serif text-[var(--text-primary)] mb-3 tracking-tight">{cat.title}</h4>
-                  <p className="text-[var(--text-secondary)] text-base font-light mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">
+                  <p className="text-[var(--text-secondary)] text-base font-light mb-6 leading-relaxed">
                     {cat.desc}
                   </p>
                   <button className="px-6 py-3 bg-luxury-gold text-luxury-black text-[8px] uppercase tracking-widest font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-500 rounded-sm">
@@ -2185,17 +2288,20 @@ const AboutPage = () => {
 const GalleryPage = () => {
   const images = [
     { url: localImages.galleryA, cat: "Layout" },
-    { url: localImages.galleryB, cat: "Development" },
-    { url: localImages.galleryC, cat: "Lifestyle" },
-    { url: localImages.galleryD, cat: "Layout" },
-    { url: localImages.galleryE, cat: "Development" },
-    { url: "/image 1.png", cat: "Amenity" },
-    { url: "/image 3.png", cat: "Infrastructure" },
-    { url: "/image 11.png", cat: "Exterior" },
-    { url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80", cat: "Architecture" },
-    { url: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80", cat: "Interiors" },
-    { url: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80", cat: "Night View" },
-    { url: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80", cat: "Community" },
+    { url: localImages.galleryB, cat: "Master Plan" },
+    { url: localImages.galleryC, cat: "Layout" },
+    { url: localImages.galleryD, cat: "Master Plan" },
+    { url: localImages.galleryE, cat: "Layout" },
+    { url: localImages.galleryF, cat: "Master Plan" },
+    { url: localImages.galleryG, cat: "Development" },
+    { url: localImages.galleryH, cat: "Lifestyle" },
+    { url: localImages.galleryI, cat: "Development" },
+    { url: localImages.galleryJ, cat: "Lifestyle" },
+    { url: localImages.galleryK, cat: "Master Plan" },
+    { url: localImages.galleryL, cat: "Layout" },
+    { url: localImages.galleryM, cat: "Development" },
+    { url: localImages.galleryN, cat: "Lifestyle" },
+    { url: localImages.galleryO, cat: "Master Plan" },
   ];
 
   return (
@@ -2416,6 +2522,9 @@ Sent via website contact form on ${new Date().toLocaleString()}`;
                 <div>
                   <h4 className="text-lg font-serif mb-1 tracking-tight text-[var(--text-primary)]">Corporate Office</h4>
                   <p className="text-[var(--text-secondary)] text-base font-light">KVR Holdings, Plot # 715, Road #36, Opp. TATA Croma,<br />Jubilee Hills, Hyderabad, Telangana - 500033</p>
+                  <a href={socialLinks.officeMap} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-luxury-gold text-sm hover:underline">
+                    Open in Google Maps
+                  </a>
                 </div>
               </div>
               <div className="flex items-start space-x-6 group">
@@ -2439,7 +2548,7 @@ Sent via website contact form on ${new Date().toLocaleString()}`;
             </div>
             <div className="h-80 w-full rounded-sm overflow-hidden grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-1000 shadow-2xl border border-[var(--border-color)]">
               <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.827222661234!2d78.4161!3d17.3850!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTfCsDIzJzA2LjAiTiA3OMKwMjQnNTYuNiJF!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin&q=KVR+Holdings,+Plot+715,+Road+36,+Opp+TATA+Croma,+Jubilee+Hills,+Hyderabad,+Telangana+500033" 
+                src="https://www.google.com/maps?q=KVR%20Holdings%2C%20Plot%20715%2C%20Road%2036%2C%20Opp%20TATA%20Croma%2C%20Jubilee%20Hills%2C%20Hyderabad%2C%20Telangana%20500033&output=embed" 
                 width="100%" 
                 height="100%" 
                 style={{ border: 0 }} 
@@ -2639,8 +2748,19 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
               Crafting premium living experiences in the heart of Hyderabad's Future City.
             </p>
             <div className="flex space-x-4">
-              {[Instagram, Linkedin, Facebook].map((Icon, i) => (
-                <a key={i} href="#" className="w-10 h-10 rounded-full border border-[var(--border-color)] flex items-center justify-center text-luxury-gold hover:bg-luxury-gold hover:text-[var(--bg-primary)] transition-all duration-500">
+              {[
+                { Icon: Instagram, href: socialLinks.instagram, label: "Instagram" },
+                { Icon: Linkedin, href: socialLinks.linkedin, label: "LinkedIn" },
+                { Icon: Facebook, href: socialLinks.facebook, label: "Facebook" },
+              ].map(({ Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="w-10 h-10 rounded-full border border-[var(--border-color)] flex items-center justify-center text-luxury-gold hover:bg-luxury-gold hover:text-[var(--bg-primary)] transition-all duration-500"
+                >
                   <Icon size={18} />
                 </a>
               ))}
@@ -2864,7 +2984,7 @@ const ChatAssistant = () => {
                           <span className="text-xs font-medium text-[var(--text-primary)] group-hover/btn:text-luxury-gold transition-colors">Call Now</span>
                         </a>
                         <a 
-                          href="https://maps.google.com" 
+                          href={socialLinks.officeMap}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-primary)] border border-luxury-gold/20 hover:border-luxury-gold/50 transition-all group/btn"
@@ -2965,3 +3085,4 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
