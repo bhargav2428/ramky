@@ -65,7 +65,7 @@ import { gain } from "three/tsl";
 import { g } from "motion/react-client";
 
 // --- Types ---
-type Page = 'home' | 'project' | 'about' | 'gallery' | 'contact' | 'blogs';
+type Page = 'home' | 'project' | 'about' | 'gallery' | 'partners' | 'contact' | 'blogs';
 type Theme = 'dark' | 'light';
 
 interface ThemeContextType {
@@ -121,14 +121,15 @@ interface RevealProps {
 }
 
 const localImages = {
-  logo: "/image 12.png",
-  logoAlt: "/image 12 copy.png",
+  logo: "/image_12-removebg-preview.png",
+  logoAlt: "/image_12-removebg-preview.png.png",
   founder: "/image.png",
   heroA: "/DJI_0171 (1).JPG", // Luxury villa exterior for "The Pinnacle of Living"
-  heroB: "/DSC05019 (1) 1.png", // Modern city skyline for "Strategic Investment"
+  // Modern city skyline for "Strategic Investment"
   heroC: "/9.Arch Brindavanam (1) 1.png",
-  aerial: "/DJI_0171 (1).JPG",
-  masterPlan: "/Group 3.png", // Architectural master plan layout
+  aerial: "/WhatsApp Image 2026-04-08 at 21.53.03 (1).jpegs", // Aerial drone footage of the project site
+  masterPlan: "/Group 3.png", // Architectural master plan poster
+  masterPlanVideo: "/WhatsApp Video 2026-04-09 at 11.10.57.mp4", // Architectural master plan video
   amenityA: "/WhatsApp Image 2026-04-08 at 21.53.02.jpeg", // Luxury clubhouse interior
   amenityB: "/WhatsApp Image 2026-04-08 at 21.53.01 (1).jpeg", // Infinity swimming pool
   amenityC: "/WhatsApp Image 2026-04-08 at 21.53.02 (1).jpeg", // Modern fitness gym
@@ -166,63 +167,123 @@ const socialLinks = {
 
 // --- 3D Components ---
 
-const Room = ({ position, size, color, name, description, onSelect, isSelected }: { 
-  position: [number, number, number], 
-  size: [number, number, number], 
-  color: string, 
+const LandscapeTree = ({ position, scale = 1 }: { position: [number, number, number], scale?: number }) => (
+  <group position={position} scale={scale}>
+    <mesh position={[0, 0.35, 0]} castShadow receiveShadow>
+      <cylinderGeometry args={[0.08, 0.12, 0.7, 10]} />
+      <meshStandardMaterial color="#5B4636" roughness={0.9} />
+    </mesh>
+    <mesh position={[0, 0.95, 0]} castShadow>
+      <sphereGeometry args={[0.42, 14, 14]} />
+      <meshStandardMaterial color="#3E6B47" roughness={0.95} />
+    </mesh>
+  </group>
+);
+
+const PlotLight = ({ position }: { position: [number, number, number] }) => (
+  <group position={position}>
+    <mesh position={[0, 0.08, 0]}>
+      <cylinderGeometry args={[0.06, 0.06, 0.16, 12]} />
+      <meshStandardMaterial color="#C9A24A" emissive="#C9A24A" emissiveIntensity={1.4} />
+    </mesh>
+    <pointLight position={[0, 0.25, 0]} intensity={0.25} color="#D4AF37" distance={2} />
+  </group>
+);
+
+const Room = ({ position, size, color, name, description, onSelect, isSelected }: {
+  position: [number, number, number],
+  size: [number, number, number],
+  color: string,
   name: string,
   description: string,
   onSelect: () => void,
   isSelected: boolean
 }) => {
   const [hovered, setHovered] = useState(false);
-  const meshRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const roofRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.scale.y = THREE.MathUtils.lerp(meshRef.current.scale.y, isSelected ? 1.2 : 1, 0.1);
-      meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, isSelected ? size[1] / 2 + 0.2 : size[1] / 2, 0.1);
+    const pulse = 1 + Math.sin(state.clock.elapsedTime * 2.2) * 0.015;
+
+    if (groupRef.current) {
+      groupRef.current.position.y = THREE.MathUtils.lerp(
+        groupRef.current.position.y,
+        isSelected ? 0.2 : 0,
+        0.08,
+      );
+      groupRef.current.scale.setScalar(THREE.MathUtils.lerp(groupRef.current.scale.x, hovered ? 1.02 : 1, 0.08));
+    }
+
+    if (roofRef.current) {
+      roofRef.current.scale.setScalar(isSelected ? pulse : 1);
     }
   });
 
   return (
-    <group position={position}>
-      <mesh
-        ref={meshRef}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect();
-        }}
-      >
-        <boxGeometry args={size} />
-        <meshStandardMaterial 
-          color={isSelected ? "#D4AF37" : hovered ? "#E5C158" : color} 
-          roughness={0.3}
-          metalness={0.8}
-          transparent
-          opacity={0.8}
-        />
-      </mesh>
-      
-      {/* Room Label */}
-      <Text
-        position={[0, size[1] + 0.5, 0]}
-        fontSize={0.3}
-        color="white"
-        anchorX="center"
-        anchorY="middle"
-        font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff"
-      >
-        {name}
-      </Text>
+    <group ref={groupRef} position={position}>
+      <Float speed={2} rotationIntensity={0.08} floatIntensity={isSelected ? 0.35 : 0.12}>
+        <group
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect();
+          }}
+        >
+          <mesh castShadow receiveShadow position={[0, size[1] / 2, 0]}>
+            <boxGeometry args={size} />
+            <meshStandardMaterial
+              color={isSelected ? "#D4AF37" : hovered ? "#B8C0CC" : color}
+              roughness={0.28}
+              metalness={0.18}
+              polygonOffset
+              polygonOffsetFactor={1}
+              polygonOffsetUnits={1}
+            />
+          </mesh>
 
-      {/* Selection Ring */}
-      {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -size[1]/2 + 0.01, 0]}>
-          <ringGeometry args={[size[0]/2 + 0.1, size[0]/2 + 0.2, 32]} />
-          <meshBasicMaterial color="#D4AF37" transparent opacity={0.5} />
+          <mesh ref={roofRef} castShadow position={[0, size[1] + 0.08, 0]}>
+            <boxGeometry args={[size[0] * 0.96, 0.16, size[2] * 0.96]} />
+            <meshStandardMaterial color="#E8D7A8" roughness={0.32} metalness={0.08} />
+          </mesh>
+
+          <mesh position={[0, size[1] * 0.48, size[2] / 2 + 0.06]}>
+            <planeGeometry args={[size[0] * 0.72, size[1] * 0.5]} />
+            <meshStandardMaterial
+              color="#7DC7D9"
+              emissive="#7DC7D9"
+              emissiveIntensity={0.16}
+              polygonOffset
+              polygonOffsetFactor={-1}
+              polygonOffsetUnits={-1}
+            />
+          </mesh>
+
+          <mesh position={[-size[0] / 2 - 0.06, size[1] * 0.5, 0]} rotation={[0, Math.PI / 2, 0]}>
+            <planeGeometry args={[size[2] * 0.5, size[1] * 0.42]} />
+            <meshStandardMaterial
+              color="#97B5D1"
+              emissive="#97B5D1"
+              emissiveIntensity={0.1}
+              polygonOffset
+              polygonOffsetFactor={-1}
+              polygonOffsetUnits={-1}
+            />
+          </mesh>
+        </group>
+      </Float>
+
+      <Html position={[0, size[1] + 0.8, 0]} center>
+        <div className="px-2 py-1 bg-black/70 border border-luxury-gold/30 rounded-sm text-[10px] uppercase tracking-[0.2em] text-white whitespace-nowrap">
+          {name}
+        </div>
+      </Html>
+
+      {(isSelected || hovered) && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+          <ringGeometry args={[Math.max(size[0], size[2]) * 0.34, Math.max(size[0], size[2]) * 0.42, 48]} />
+          <meshBasicMaterial color="#D4AF37" transparent opacity={isSelected ? 0.65 : 0.28} />
         </mesh>
       )}
     </group>
@@ -231,26 +292,61 @@ const Room = ({ position, size, color, name, description, onSelect, isSelected }
 
 const VillaModel = ({ onRoomSelect, selectedRoom }: { onRoomSelect: (room: any) => void, selectedRoom: any }) => {
   const rooms = [
-    { name: "Master Suite", pos: [-3, 1, -2], size: [4, 2, 4], color: "#1a1a1a", desc: "A sprawling sanctuary with panoramic views and a private terrace." },
-    { name: "Grand Living", pos: [2, 1, 0], size: [6, 2, 8], color: "#222222", desc: "Double-height ceilings and floor-to-ceiling glass walls for ultimate luxury." },
-    { name: "Dining Hall", pos: [-3, 1, 3], size: [4, 2, 4], color: "#1a1a1a", desc: "An elegant space for fine dining and hosting elite gatherings." },
-    { name: "Private Cinema", pos: [6, 1, -3], size: [3, 2, 4], color: "#111111", desc: "State-of-the-art acoustic design with premium leather seating." },
-    { name: "Infinity Pool", pos: [0, 0.2, 6], size: [10, 0.4, 4], color: "#003366", desc: "A temperature-controlled pool overlooking the lush greenery." },
+    { name: "Master Suite", pos: [-4.5, 0.02, -2.8], size: [4.2, 1.9, 4.2], color: "#7B8794", desc: "A sprawling sanctuary with panoramic views and a private terrace." },
+    { name: "Grand Living", pos: [1.2, 0.02, -0.4], size: [6.8, 2.6, 7.6], color: "#A0AEC0", desc: "Double-height ceilings and floor-to-ceiling glass walls for ultimate luxury." },
+    { name: "Dining Hall", pos: [-3.8, 0.02, 3.4], size: [4.4, 1.8, 3.8], color: "#8792A2", desc: "An elegant space for fine dining and hosting elite gatherings." },
+    { name: "Private Cinema", pos: [6.2, 0.02, -3.2], size: [3.4, 1.8, 4.4], color: "#5F6B7A", desc: "State-of-the-art acoustic design with premium leather seating." },
+    { name: "Infinity Pool", pos: [0.2, 0.03, 6.3], size: [10.8, 0.28, 4.4], color: "#1E5E7A", desc: "A temperature-controlled pool overlooking the lush greenery." },
+  ];
+
+  const trees: Array<[number, number, number]> = [
+    [-8, 0, -7], [-6.8, 0, -8], [-4.5, 0, -7.5], [8, 0, -7.2],
+    [9, 0, -4.6], [9.2, 0, -1.2], [-9, 0, 2], [-8, 0, 5.2],
+    [8.8, 0, 5.6], [6.8, 0, 8], [2.8, 0, 8.4], [-2.5, 0, 8.2],
+  ];
+
+  const plotLights: Array<[number, number, number]> = [
+    [-10, 0, -10], [-6, 0, -10], [-2, 0, -10], [2, 0, -10], [6, 0, -10], [10, 0, -10],
+    [-10, 0, 10], [-6, 0, 10], [-2, 0, 10], [2, 0, 10], [6, 0, 10], [10, 0, 10],
   ];
 
   return (
     <group>
-      {/* Base Floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
-        <planeGeometry args={[25, 25]} />
-        <meshStandardMaterial color="#0a0a0a" roughness={1} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.18, 0]} receiveShadow>
+        <planeGeometry args={[34, 34]} />
+        <meshStandardMaterial color="#0F1720" roughness={1} />
       </mesh>
 
-      {/* Grid Helper for luxury feel */}
-      <gridHelper args={[20, 20, "#D4AF37", "#1a1a1a"]} position={[0, 0, 0]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]} receiveShadow>
+        <planeGeometry args={[22, 22]} />
+        <meshStandardMaterial color="#141F18" roughness={0.95} />
+      </mesh>
+
+      <mesh position={[0, 0.08, 0]} receiveShadow>
+        <boxGeometry args={[17.5, 0.16, 14.5]} />
+        <meshStandardMaterial color="#D9D4CA" roughness={0.95} />
+      </mesh>
+
+      <mesh position={[0, 0.015, -8.2]} receiveShadow>
+        <boxGeometry args={[20, 0.08, 2.4]} />
+        <meshStandardMaterial color="#2A2F38" roughness={0.9} />
+      </mesh>
+      <mesh position={[-7.2, 0.015, 0.2]} receiveShadow>
+        <boxGeometry args={[2.2, 0.08, 17.5]} />
+        <meshStandardMaterial color="#2A2F38" roughness={0.9} />
+      </mesh>
+      <mesh position={[7.4, 0.015, 0.2]} receiveShadow>
+        <boxGeometry args={[2.2, 0.08, 17.5]} />
+        <meshStandardMaterial color="#2A2F38" roughness={0.9} />
+      </mesh>
+
+      <mesh position={[0.2, 0.14, 0.8]} receiveShadow>
+        <boxGeometry args={[6, 0.05, 0.9]} />
+        <meshStandardMaterial color="#B69A63" roughness={0.75} />
+      </mesh>
 
       {rooms.map((room, i) => (
-        <Room 
+        <Room
           key={i}
           position={room.pos as [number, number, number]}
           size={room.size as [number, number, number]}
@@ -262,10 +358,20 @@ const VillaModel = ({ onRoomSelect, selectedRoom }: { onRoomSelect: (room: any) 
         />
       ))}
 
-      {/* Ambient Lighting */}
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} intensity={1.5} color="#D4AF37" />
-      <spotLight position={[-10, 15, 10]} angle={0.3} penumbra={1} intensity={2} castShadow />
+      {trees.map((position, i) => (
+        <LandscapeTree key={i} position={position} scale={i % 3 === 0 ? 1.1 : 0.92} />
+      ))}
+
+      {plotLights.map((position, i) => (
+        <PlotLight key={i} position={position} />
+      ))}
+
+      <ambientLight intensity={1.15} />
+      <hemisphereLight intensity={0.9} groundColor="#0f1720" color="#f7f1de" />
+      <directionalLight position={[10, 14, 8]} intensity={2.4} color="#ffffff" castShadow />
+      <pointLight position={[0, 4, 6]} intensity={2.4} color="#78D5F7" distance={18} />
+      <pointLight position={[0, 8, -2]} intensity={1.8} color="#D4AF37" distance={24} />
+      <spotLight position={[-10, 18, 10]} angle={0.32} penumbra={1} intensity={2.2} castShadow />
     </group>
   );
 };
@@ -280,7 +386,14 @@ const Villa3DExperience = () => {
         <p className="text-[var(--text-secondary)] text-xs uppercase tracking-[0.3em]">Explore the Masterpiece</p>
       </div>
 
-      <Canvas shadows dpr={[1, 2]}>
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        onCreated={({ gl, scene }) => {
+          gl.setClearColor("#161616");
+          scene.background = new THREE.Color("#161616");
+        }}
+      >
         <PerspectiveCamera makeDefault position={[12, 12, 12]} fov={40} />
         <OrbitControls 
           enablePan={false} 
@@ -290,9 +403,6 @@ const Villa3DExperience = () => {
           autoRotate={!selectedRoom}
           autoRotateSpeed={0.5}
         />
-        
-        <Environment preset="night" />
-        
         <VillaModel 
           selectedRoom={selectedRoom}
           onRoomSelect={(room) => setSelectedRoom(room)} 
@@ -379,7 +489,7 @@ const LoadingScreen = () => {
           <img
             src={localImages.logo}
             alt="Ramky Brindavanam logo"
-            className="w-32 h-32 rounded-sm object-contain shadow-2xl"
+            className="w-28 h-28 rounded-sm object-contain shadow-2xl"
           />
         </motion.div>
         
@@ -437,12 +547,6 @@ const HeroCarousel = ({ onCtaClick }: { onCtaClick: () => void }) => {
       subtitle: "Ramky’s Brindavanam",
       desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
     },
-    // {
-    //   image: localImages.heroB,
-    //   title: "Strategic Investment",
-    //   subtitle: "Future City Growth",
-    //   desc: "Positioned in the 4th Growth Zone of Hyderabad, ensuring unparalleled appreciation and ROI."
-    // },
     {
       image: localImages.heroC,
       title: "Architectural Excellence",
@@ -571,11 +675,16 @@ const MasterPlanSection = () => {
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
             className="rounded-sm overflow-hidden border border-[var(--border-color)] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative"
           >
-            <img 
-              src={localImages.masterPlan} 
-              alt="Master Plan Overview" 
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              poster={localImages.masterPlan}
               className="w-full aspect-video object-cover opacity-80 group-hover:scale-105 transition-transform duration-[3s]"
-            />
+            >
+              <source src={localImages.masterPlanVideo} type="video/mp4" />
+            </video>
             <div className="absolute inset-0 bg-gradient-to-t from-luxury-black/90 via-transparent to-transparent"></div>
             
             {/* Interactive Hotspots */}
@@ -854,6 +963,7 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
     { label: "The Project", id: "project" },
     { label: "About Us", id: "about" },
     { label: "Gallery", id: "gallery" },
+    { label: "Partners", id: "partners" },
     { label: "Blogs", id: "blogs" },
     { label: "Contact", id: "contact" },
   ];
@@ -868,7 +978,7 @@ const Navbar = ({ activePage, setActivePage }: { activePage: Page, setActivePage
           <img
             src={localImages.logo}
             alt="Ramky logo"
-            className="w-32 h-24 rounded-sm object-contain mr-4 group-hover:scale-110 transition-transform duration-500"
+            className="w-36 h-24 rounded-sm object-contain mr-4 group-hover:scale-110 transition-transform duration-500"
           />
           {/* <div className="relative">
             <span className="text-2xl md:text-3xl font-serif font-bold tracking-tighter text-luxury-gold group-hover:text-[var(--text-primary)] transition-colors">RAMKY</span>
@@ -964,12 +1074,6 @@ const Hero = ({ onCtaClick }: { onCtaClick: () => void }) => {
       title: "Ramky’s Brindavanam",
       subtitle: "The Pinnacle of Living",
       desc: "A 100-acre legacy crafted for those who seek the extraordinary in the heart of Future City."
-    },
-    {
-      image: localImages.heroB,
-      title: "Future City Growth",
-      subtitle: "Strategic Investment",
-      desc: "Positioned at the epicenter of Hyderabad's next global growth engine with massive appreciation potential."
     },
     {
       image: localImages.heroC,
@@ -1156,7 +1260,7 @@ const floorPlans: FloorPlan[] = [
         name: "Grand Living Room",
         area: "450 Sq.Ft",
         description: "A spacious, double-height living area designed for grand gatherings and premium comfort.",
-        image: localImages.galleryB, // Luxury interiors image
+        image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2070&auto=format&fit=crop",
         path: "M 10 10 H 190 V 110 H 10 Z",
         icon: Sofa
       },
@@ -1165,7 +1269,7 @@ const floorPlans: FloorPlan[] = [
         name: "Master Suite",
         area: "380 Sq.Ft",
         description: "The ultimate sanctuary featuring a private balcony, walk-in closet, and spa-like ensuite.",
-        image: localImages.galleryD, // Lifestyle scene
+        image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=2070&auto=format&fit=crop",
         path: "M 190 10 H 290 V 110 H 190 Z",
         icon: Bed
       },
@@ -1174,7 +1278,7 @@ const floorPlans: FloorPlan[] = [
         name: "Gourmet Kitchen",
         area: "220 Sq.Ft",
         description: "State-of-the-art modular kitchen with premium finishes and a dedicated utility area.",
-        image: localImages.amenityC, // Modern gym - could represent modern kitchen appliances
+        image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=2070&auto=format&fit=crop",
         path: "M 10 110 H 110 V 210 H 10 Z",
         icon: Utensils
       },
@@ -1183,7 +1287,7 @@ const floorPlans: FloorPlan[] = [
         name: "Fine Dining",
         area: "180 Sq.Ft",
         description: "Elegant dining space adjacent to the kitchen, perfect for intimate family meals.",
-        image: localImages.galleryF, // Community space - could represent dining gatherings
+        image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?q=80&w=2070&auto=format&fit=crop",
         path: "M 110 110 H 190 V 210 H 110 Z",
         icon: Maximize
       }
@@ -1273,6 +1377,12 @@ const InteractiveFloorPlan = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (!isLoading && !activeRoom) {
+      setActiveRoom(selectedPlan.rooms[0] ?? null);
+    }
+  }, [isLoading, activeRoom, selectedPlan]);
+
   return (
     <section className="py-24 md:py-32 bg-[var(--bg-primary)]">
       <div className="container mx-auto px-6">
@@ -1292,7 +1402,7 @@ const InteractiveFloorPlan = () => {
             </button>
             <button 
               onClick={() => setViewMode('3d')}
-              className={`px-8 py-3 text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-700 rounded-sm flex items-center ${viewMode === '3d' ? 'bg-luxury-gold text-[var(--bg-primary)] shadow-lg' : 'text-[var(--text-secondary)] hover:text(--text-primary)]'}`}
+              className={`px-8 py-3 text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-700 rounded-sm flex items-center ${viewMode === '3d' ? 'bg-luxury-gold text-[var(--bg-primary)] shadow-lg' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
             >
               <Box className="mr-3" size={14} />
               3D Interactive
@@ -1334,10 +1444,10 @@ const InteractiveFloorPlan = () => {
                       <motion.path
                         key={room.id}
                         d={room.path}
-                        fill={activeRoom?.id === room.id ? "rgba(201, 162, 74, 0.3)" : "rgba(201, 162, 74, 0.03)"}
-                        stroke={activeRoom?.id === room.id ? "#C9A24A" : "rgba(201, 162, 74, 0.1)"}
-                        strokeWidth="1"
-                        className="cursor-pointer transition-all duration-500 hover:fill-luxury-gold/20"
+                        fill={activeRoom?.id === room.id ? "rgba(201, 162, 74, 0.32)" : "rgba(201, 162, 74, 0.09)"}
+                        stroke={activeRoom?.id === room.id ? "#C9A24A" : "rgba(201, 162, 74, 0.35)"}
+                        strokeWidth="1.5"
+                        className="cursor-pointer transition-all duration-500"
                         onClick={() => setActiveRoom(room)}
                         whileHover={{ scale: 1.01 }}
                       />
@@ -1452,7 +1562,7 @@ const InteractiveFloorPlan = () => {
                     <div className="w-20 h-20 bg-[var(--card-bg)] rounded-full flex items-center justify-center text-luxury-gold/20 mb-10">
                       <Info size={40} />
                     </div>
-                    <h4 className="text-3xl font-serif mb-6 text-[var(--text-primary)] opacity-40">Select a Room</h4>
+                    <h4 className="text-3xl font-serif mb-6 text-[var(--text-primary)] opacity-60">Select a Room</h4>
                     <p className="text-[var(--text-secondary)] text-lg font-light leading-relaxed max-w-xs">
                       Click on any area of the floor plan to view high-resolution imagery and detailed specifications.
                     </p>
@@ -1949,6 +2059,14 @@ const PartnersSection = () => {
   );
 };
 
+const PartnersPage = () => {
+  return (
+    <main className="pt-32 md:pt-48 bg-[var(--bg-primary)]">
+      <PartnersSection />
+    </main>
+  );
+};
+
 // --- Page Content ---
 
 const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
@@ -2082,8 +2200,6 @@ const HomePage = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
           </div>
         </div>
       </section>
-
-      <PartnersSection />
 
       {/* Full Width Map Section */}
       <FullWidthMap />
@@ -2740,7 +2856,7 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
               <img
                 src={localImages.logo}
                 alt="Ramky logo"
-                className="w-12 h-12 rounded-sm object-contain"
+                className="w-16 h-16 rounded-sm object-contain"
               />
               <span className="text-2xl font-serif font-bold tracking-tighter text-[var(--text-primary)]">RAMKY</span>
             </div>
@@ -2770,7 +2886,7 @@ const Footer = ({ setActivePage }: { setActivePage: (p: Page) => void }) => {
           <div>
             <h4 className="text-lg font-serif mb-8 tracking-tight text-[var(--text-primary)]">Quick Links</h4>
             <ul className="space-y-3">
-              {['home', 'project', 'about', 'gallery', 'blogs', 'contact'].map((page) => (
+              {['home', 'project', 'about', 'gallery', 'partners', 'blogs', 'contact'].map((page) => (
                 <li key={page}>
                   <button 
                     onClick={() => setActivePage(page as Page)}
@@ -3071,6 +3187,7 @@ export default function App() {
             {activePage === 'project' && <ProjectPage />}
             {activePage === 'about' && <AboutPage />}
             {activePage === 'gallery' && <GalleryPage />}
+            {activePage === 'partners' && <PartnersPage />}
             {activePage === 'blogs' && <BlogPage />}
             {activePage === 'contact' && <ContactPage />}
           </motion.div>
