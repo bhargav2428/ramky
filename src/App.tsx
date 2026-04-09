@@ -127,7 +127,7 @@ const localImages = {
   heroA: "/DJI_0171 (1).JPG", // Luxury villa exterior for "The Pinnacle of Living"
   // Modern city skyline for "Strategic Investment"
   heroC: "/9.Arch Brindavanam (1) 1.png",
-  aerial: "/WhatsApp Image 2026-04-08 at 21.53.03 (1).jpegs", // Aerial drone footage of the project site
+  aerial: "/DJI_0171 (1).JPG", // Aerial drone footage of the project site
   masterPlan: "/Group 3.png", // Architectural master plan poster
   masterPlanVideo: "/WhatsApp Video 2026-04-09 at 11.10.57.mp4", // Architectural master plan video
   amenityA: "/WhatsApp Image 2026-04-08 at 21.53.02.jpeg", // Luxury clubhouse interior
