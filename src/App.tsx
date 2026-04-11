@@ -57,7 +57,8 @@ import {
   FileText,
   ExternalLink,
   MessageCircle,
-  Send
+  Send,
+  RotateCcw
 } from "lucide-react";
 import { useState, useEffect, useRef, ReactNode, createContext, useContext } from "react";
 import { on } from "events";
@@ -67,6 +68,21 @@ import { g } from "motion/react-client";
 // --- Types ---
 type Page = 'home' | 'project' | 'about' | 'gallery' | 'partners' | 'contact' | 'blogs';
 type Theme = 'dark' | 'light';
+type PlotStatus = 'available' | 'booked';
+
+interface MasterPlanPlot {
+  id: string;
+  label: string;
+  status: PlotStatus;
+  type: string;
+  phase?: string;
+  area?: string;
+  facing?: string;
+  notes?: string;
+  position: { x: number; z: number };
+  size: { width: number; depth: number };
+  rotation?: number;
+}
 
 interface ThemeContextType {
   theme: Theme;
@@ -126,10 +142,12 @@ const localImages = {
   founder: "/image.png",
   heroA: "/DJI_0171 (1).JPG", // Luxury villa exterior for "The Pinnacle of Living"
   // Modern city skyline for "Strategic Investment"
-  heroC: "/9.Arch Brindavanam (1) 1.png",
+  heroC: "/WhatsApp Image 2026-04-11 at 11.44.12.jpeg",
   aerial: "/DJI_0171 (1).JPG", // Aerial drone footage of the project site
   masterPlan: "/Group 3.png", // Architectural master plan poster
-  masterPlanVideo: "/WhatsApp Video 2026-04-09 at 11.10.57.mp4", // Architectural master plan video
+  masterPlanVideo: "/download.mp4", // Architectural master plan video
+  masterPlanReference: "/master-plan-reference.png",
+  masterPlanPdf: "/master-plan-layout.pdf",
   amenityA: "/WhatsApp Image 2026-04-08 at 21.53.02.jpeg", // Luxury clubhouse interior
   amenityB: "/WhatsApp Image 2026-04-08 at 21.53.01 (1).jpeg", // Infinity swimming pool
   amenityC: "/WhatsApp Image 2026-04-08 at 21.53.02 (1).jpeg", // Modern fitness gym
@@ -149,8 +167,8 @@ const localImages = {
   galleryM: "/WhatsApp Image 2026-04-08 at 21.53.07.jpeg",
   galleryN: "/WhatsApp Image 2026-04-08 at 21.53.08 (1).jpeg",
   galleryO: "/WhatsApp Image 2026-04-08 at 21.53.08 (2).jpeg",
-  blueprintA: "/image 4.png", // 2D Blueprint 1
-  blueprintB: "/image 5.png", // 2D Blueprint 2
+  blueprintA: "/WhatsApp Image 2026-04-11 at 12.30.04.jpeg", // 2D Blueprint 1
+  blueprintB: "/WhatsApp Image 2026-04-11 at 12.30.12.jpeg", // 2D Blueprint 2
   onsiteA: "/WhatsApp Image 2026-04-08 at 21.52.57 (1).jpeg", // Construction site image 1
   onsiteB: "/WhatsApp Image 2026-04-08 at 21.52.57.jpeg", // Construction site image 2
   onsiteC: "/WhatsApp Image 2026-04-08 at 21.52.58 (1).jpeg", // Construction site image 3
@@ -1346,8 +1364,8 @@ const ExitIntentPopup = () => {
             
             <div className="flex flex-col md:flex-row gap-6">
               <a 
-                href="/Ramky-Villa-Pitch-Deck.pdf" 
-                download="Ramky-Villa-Pitch-Deck.pdf"
+                href="/ramky-brochure.pdf" 
+                download="ramky-brochure.pdf"
                 className="px-10 py-5 bg-luxury-gold text-[var(--bg-primary)] text-sm uppercase tracking-[0.3em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-700 rounded-sm text-center"
               >
                 Download Brochure
@@ -1583,6 +1601,166 @@ const InteractiveFloorPlan = () => {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+    </section>
+  );
+};
+
+const statusConfig: Record<PlotStatus, { label: string; color: string; emissive: string }> = {
+  available: { label: "Available", color: "#1DB954", emissive: "#0A6A27" },
+  booked: { label: "Booked", color: "#D7263D", emissive: "#7A1020" },
+};
+
+const MasterPlanPlotBlock = ({
+  plot,
+  isSelected,
+  onSelect,
+}: {
+  plot: MasterPlanPlot;
+  isSelected: boolean;
+  onSelect: (plot: MasterPlanPlot) => void;
+}) => {
+  const [hovered, setHovered] = useState(false);
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const targetY = isSelected ? 0.36 : hovered ? 0.18 : 0;
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.12);
+    const targetScale = isSelected ? 1.06 : hovered ? 1.03 : 1;
+    groupRef.current.scale.setScalar(THREE.MathUtils.lerp(groupRef.current.scale.x, targetScale, 0.12));
+    groupRef.current.rotation.y = plot.rotation ?? 0;
+
+    if (isSelected) {
+      groupRef.current.position.y += Math.sin(state.clock.elapsedTime * 3) * 0.01;
+    }
+  });
+
+  const status = statusConfig[plot.status];
+
+  return (
+    <group ref={groupRef} position={[plot.position.x, 0, plot.position.z]}>
+      <group
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+        }}
+        onPointerOut={() => setHovered(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(plot);
+        }}
+      >
+        <mesh castShadow receiveShadow position={[0, 0.16, 0]}>
+          <boxGeometry args={[plot.size.width, 0.32, plot.size.depth]} />
+          <meshStandardMaterial
+            color={status.color}
+            emissive={status.emissive}
+            emissiveIntensity={isSelected ? 0.5 : hovered ? 0.25 : 0.12}
+            roughness={0.42}
+            metalness={0.14}
+          />
+        </mesh>
+
+        <mesh receiveShadow position={[0, 0.33, 0]}>
+          <boxGeometry args={[plot.size.width * 0.92, 0.04, plot.size.depth * 0.92]} />
+          <meshStandardMaterial color={isSelected ? "#F8F5EA" : "#E9E4D5"} roughness={0.85} />
+        </mesh>
+
+        {(hovered || isSelected) && (
+          <Html position={[0, 0.62, 0]} center distanceFactor={10}>
+            <div className="rounded-sm border border-luxury-gold/30 bg-[rgba(10,10,10,0.86)] px-3 py-2 text-center shadow-xl backdrop-blur-sm">
+              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-luxury-gold">{plot.type}</div>
+              <div className="text-sm font-semibold text-white">{plot.label}</div>
+            </div>
+          </Html>
+        )}
+      </group>
+    </group>
+  );
+};
+
+const MasterPlanInventoryScene = ({
+  plots,
+  selectedPlot,
+  onSelectPlot,
+}: {
+  plots: MasterPlanPlot[];
+  selectedPlot: MasterPlanPlot | null;
+  onSelectPlot: (plot: MasterPlanPlot | null) => void;
+}) => {
+  return (
+    <group onPointerMissed={() => onSelectPlot(null)}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.18, 0]} receiveShadow>
+        <planeGeometry args={[44, 34]} />
+        <meshStandardMaterial color="#12161D" roughness={1} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
+        <planeGeometry args={[38, 28]} />
+        <meshStandardMaterial color="#172116" roughness={0.98} />
+      </mesh>
+
+      {plots.map((plot) => (
+        <MasterPlanPlotBlock
+          key={plot.id}
+          plot={plot}
+          isSelected={selectedPlot?.id === plot.id}
+          onSelect={onSelectPlot}
+        />
+      ))}
+
+      <ambientLight intensity={1.05} />
+      <hemisphereLight intensity={0.85} groundColor="#0f1720" color="#f7f1de" />
+      <directionalLight position={[12, 18, 10]} intensity={2.3} castShadow />
+      <spotLight position={[-14, 20, 8]} angle={0.45} penumbra={1} intensity={1.8} castShadow />
+      <pointLight position={[0, 5, -10]} intensity={1.5} color="#F2D375" distance={20} />
+      <pointLight position={[10, 4, 8]} intensity={1.2} color="#6CD4FF" distance={18} />
+    </group>
+  );
+};
+
+const MasterPlanInventorySection = () => {
+  return (
+    <section className="py-24 md:py-32 bg-[var(--bg-secondary)] relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,162,74,0.14),transparent_35%)]" />
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="max-w-4xl mb-14">
+          <span className="text-luxury-gold text-xs uppercase tracking-[0.5em] font-bold mb-4 block">Master Plan Layout</span>
+          <h2 className="text-4xl md:text-6xl font-serif leading-tight text-[var(--text-primary)] mb-5">
+            Approved Layout Reference
+          </h2>
+          <p className="text-[var(--text-secondary)] text-lg font-light leading-relaxed">
+            The previous 3D version has been removed so this section shows only the accurate approved layout image from your PDF.
+          </p>
+        </div>
+
+        <div className="glass-card rounded-sm border border-[var(--border-color)] p-4 md:p-6">
+          <div className="overflow-hidden rounded-sm border border-[var(--border-color)] bg-[var(--bg-primary)]">
+            <img
+              src={localImages.masterPlanReference}
+              alt="Approved master plan layout"
+              className="w-full h-auto object-contain"
+            />
+          </div>
+
+          <div className="mt-6 flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            <div className="max-w-3xl">
+              <div className="text-luxury-gold text-[10px] uppercase tracking-[0.4em] font-bold mb-3">Reference Layout</div>
+              <p className="text-[var(--text-secondary)] text-base md:text-lg font-light leading-relaxed">
+                This section keeps the PNG preview visible in the page for quick viewing, while the button opens the original PDF layout in a new tab.
+              </p>
+            </div>
+            <a
+              href={localImages.masterPlanPdf}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center px-6 py-3 bg-luxury-gold text-luxury-black text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all duration-500 rounded-sm"
+            >
+              Open Full PDF
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -2261,8 +2439,8 @@ const ProjectPage = () => {
       image: localImages.blueprintA
     },
     {
-      title: "Master Layout Design",
-      desc: "Comprehensive architectural plans illustrating the complete project layout.",
+      title: "Mucherla is Moving Forward ",
+      desc: "Future Metro Connectivity at Mucherla",
       image: localImages.blueprintB
     }
   ];
@@ -2307,6 +2485,8 @@ const ProjectPage = () => {
           </div>
         </div>
       </section>
+
+      <MasterPlanInventorySection />
 
       <InteractiveFloorPlan />
     </main>
